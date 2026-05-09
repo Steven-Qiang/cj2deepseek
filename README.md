@@ -1,13 +1,13 @@
 # CJ2API
 
-将 [ChatJimmy](https://chatjimmy.ai) 转换为 OpenAI 兼容 API 的 Cloudflare Worker。
+将 [ChatJimmy](https://chatjimmy.ai) 转换为 OpenAI 兼容 API 的工具，支持 Cloudflare Workers 和腾讯云 EdgeOne Pages。
 
-一键部署到 Cloudflare Workers，即可获得标准的 `/v1/chat/completions` 接口，兼容所有支持 OpenAI API 的客户端和框架。无需 API Key。
+一键部署到 Cloudflare 或 EdgeOne，即可获得标准的 `/v1/chat/completions` 接口，兼容所有支持 OpenAI API 的客户端和框架。无需 API Key。
 
 ## 特性
 
 - **OpenAI 兼容** — 标准 Chat Completions API 格式，支持流式 (SSE) 和非流式响应
-- **零成本部署** — 运行在 Cloudflare Workers 免费套餐上
+- **多平台部署** — 同时支持 Cloudflare Workers 和腾讯云 EdgeOne Pages
 - **自带测试页** — 访问根路径即可在线测试，附带 cURL / Python / Node.js 示例
 - **Token 统计** — 响应中包含 `usage` 字段，测试页实时显示输出速度
 - **极简代码** — 纯 TypeScript，无任何第三方运行时依赖
@@ -17,9 +17,9 @@
 ### 前置条件
 
 - [Node.js](https://nodejs.org/) 18+
-- [Cloudflare 账号](https://dash.cloudflare.com/sign-up)（免费即可）
+- [Cloudflare 账号](https://dash.cloudflare.com/sign-up) 或 [腾讯云账号](https://console.cloud.tencent.com/)
 
-### 方式一：从 GitHub 克隆（推荐）
+### 方式一：部署到 Cloudflare Workers (从 GitHub 克隆)
 
 ```bash
 git clone https://github.com/qingchencloud/cj2api.git
@@ -29,7 +29,9 @@ npx wrangler login    # 首次使用需登录 Cloudflare
 npm run deploy
 ```
 
-### 方式二：从 npm 安装
+部署完成后，Wrangler 会输出你的 Worker URL，形如 `https://cj2api.<你的子域>.workers.dev`。
+
+### 方式二：从 npm 安装 (Cloudflare)
 
 ```bash
 npm install @qingchencloud/cj2api
@@ -38,9 +40,21 @@ npx wrangler login    # 首次使用需登录 Cloudflare
 npm run deploy
 ```
 
-部署完成后，Wrangler 会输出你的 Worker URL，形如 `https://cj2api.<你的子域>.workers.dev`。
+### 方式三：部署到腾讯云 EdgeOne Pages (推荐国内直连)
 
-> **国内访问提示：** `*.workers.dev` 域名在国内需要科学上网。如果你有托管在 Cloudflare 的域名，可以在 Dashboard → Workers → cj2api → Settings → Domains & Routes 中绑定自定义域名，走 CDN 国内可直连。
+EdgeOne Pages 提供了更佳的国内访问体验，支持一键部署：
+
+[![使用 EdgeOne Pages 部署](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://console.cloud.tencent.com/edgeone/pages/new?repository-url=https%3A%2F%2Fgithub.com%2Fqingchencloud%2Fcj2api)
+
+或者手动部署：
+```bash
+npm install
+npm run deploy:edgeone
+```
+
+> **国内访问提示：**
+> - **Cloudflare**: `*.workers.dev` 域名在国内访问可能不稳定，建议绑定自定义域名走 CDN，或通过 Dashboard → Workers → cj2api → Settings → Domains & Routes 绑定域名。
+> - **EdgeOne**: 默认提供国内边缘节点加速，延迟极低，无需额外配置即可直连。
 
 > **提示：** 如客户端要求填写 API Key，随意输入任意字符串即可。
 
@@ -196,24 +210,6 @@ npm run dev
 # 默认监听 http://localhost:8787
 ```
 
-本地开发时，可以搭配 [cftunnel](https://github.com/qingchencloud/cftunnel) 将本地服务暴露到公网，方便远程调试或分享给他人测试：
-
-```bash
-# 另开终端，生成临时公网地址
-cftunnel quick 8787
-# 输出类似: https://xxx-xxx-xxx.trycloudflare.com
-```
-
-如需绑定自有域名：
-
-```bash
-cftunnel init
-cftunnel create my-api
-cftunnel add api 8787 --domain api.example.com
-cftunnel up
-# 通过 https://api.example.com/v1/chat/completions 稳定访问
-```
-
 ## 工作原理
 
 ```
@@ -223,7 +219,7 @@ cftunnel up
   │  标准 OpenAI 请求格式
   ▼
 ┌─────────────────────────┐
-│   Cloudflare Worker      │
+│   Worker / Edge Function │
 │                         │
 │  1. 解析请求体           │
 │  2. 提取 system 消息     │
@@ -241,42 +237,15 @@ cftunnel up
 └─────────────────────────┘
 ```
 
-### 协议转换细节
-
-**请求转换：** 客户端发送标准 OpenAI 格式，Worker 将其转换为 ChatJimmy 的私有格式：
-
-- `messages` 中的 `system` 角色消息被提取为 `chatOptions.systemPrompt`
-- `model` 映射到 `chatOptions.selectedModel`
-- `top_k` 映射到 `chatOptions.topK`
-
-**响应解析：** ChatJimmy 返回纯文本，末尾附带统计块：
-
-```
-这是回复内容...<|stats|>{"prefill_tokens":12,"decode_tokens":85,"total_tokens":97}<|/stats|>
-```
-
-Worker 解析出内容和统计信息，封装为标准 OpenAI 响应格式。
-
-**模拟流式输出：** 上游不支持真正的 SSE 流式，Worker 采用"伪流式"策略 — 先获取完整响应，再将内容按自然断点（空格、标点、换行）拆分为小块，逐块以 SSE `data:` 事件推送给客户端。
-
 ## 项目结构
 
 ```
 cj2api/
-├── src/
-│   ├── index.ts        # 入口，路由分发
-│   ├── chat.ts         # Chat Completions 处理（流式/非流式）
-│   ├── models.ts       # 模型列表端点
-│   ├── upstream.ts     # 上游 ChatJimmy 请求转换
-│   ├── page.ts         # 内置测试页面
-│   ├── types.ts        # TypeScript 类型定义
-│   └── utils.ts        # 工具函数（ID生成、响应解析等）
-├── .claude/
-│   └── skills/             # Claude Code 维护 Skills
-│       ├── release/SKILL.md    # 发版流程
-│       ├── deploy/SKILL.md     # 部署流程
-│       └── update-page/SKILL.md # 测试页面维护
+├── src/                # 核心业务逻辑 (跨平台共享)
+├── functions/          # EdgeOne Pages Functions 入口
+├── index.ts            # Cloudflare Workers 入口
 ├── wrangler.toml       # Cloudflare Workers 配置
+├── edgeone.json        # EdgeOne Pages 配置
 ├── tsconfig.json       # TypeScript 配置
 ├── package.json
 └── README.md
@@ -284,26 +253,17 @@ cj2api/
 
 ## Claude Code Skills
 
-本项目内置了 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 维护 Skills，方便开发者通过 AI 辅助进行项目维护：
+本项目内置了 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 维护 Skills：
 
 | Skill | 说明 |
 |-------|------|
-| `/release` | 版本发布：bump 版本号 → npm publish → git tag → push |
+| `/release` | 版本发布 |
 | `/deploy` | 部署到 Cloudflare Workers |
-| `/update-page` | 维护内置测试页面（page.ts） |
-
-在 Claude Code 中打开本项目目录，输入对应 Skill 名称即可使用。
+| `/update-page` | 维护内置测试页面 |
 
 ## 免责声明
 
-本项目仅供**学习研究和技术测试**使用，请勿用于任何商业用途。
-
-- 本项目是对 [ChatJimmy](https://chatjimmy.ai) 公开接口的协议转换封装，不提供任何模型能力本身
-- 使用者应遵守 ChatJimmy 的服务条款和使用政策
-- 请勿将本项目用于大规模请求、自动化爬取或任何可能对上游服务造成负担的行为
-- 上游服务的可用性、响应质量和模型能力均由 ChatJimmy 提供，与本项目无关
-- 作者不对因使用本项目产生的任何直接或间接损失承担责任
-- 如上游服务条款发生变更导致本项目不可用，作者不承担任何义务
+本项目仅供**学习研究和技术测试**使用，请勿用于任何商业用途。作者不对因使用本项目产生的任何损失承担责任。
 
 ## License
 

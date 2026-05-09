@@ -1,7 +1,7 @@
 {
   "name": "@qingchencloud/cj2api",
   "version": "1.0.2",
-  "description": "将 ChatJimmy 转换为 OpenAI 兼容 API 的 Cloudflare Worker",
+  "description": "基于 ChatJimmy 实现的 OpenAI 兼容 API，支持 Cloudflare Workers 和 EdgeOne Pages。",
   "repository": {
     "type": "git",
     "url": "https://github.com/qingchencloud/cj2api.git"
@@ -14,6 +14,7 @@
     "openai",
     "api",
     "cloudflare-workers",
+    "edgeone-pages",
     "chatjimmy",
     "proxy",
     "llm",
@@ -21,7 +22,9 @@
   ],
   "files": [
     "src/",
+    "functions/",
     "wrangler.toml",
+    "edgeone.json",
     "tsconfig.json"
   ],
   "publishConfig": {
@@ -30,6 +33,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "deploy:edgeone": "edgeone pages deploy",
     "tail": "wrangler tail"
   },
   "devDependencies": {
