@@ -555,10 +555,11 @@ onMounted(async () => {
 <template>
   <div class="container">
     <header class="header">
-      <h1>开源 API 转发工具</h1>
-      <span class="badge">开源</span>
+      <h1>RelayHub</h1>
+      <span class="badge">v1.1.0</span>
     </header>
-    <p class="subtitle">开源 AI 接口转发工具 · 聚合转发 ChatGPT / Claude / DeepSeek / Gemini 等主流大模型 · OpenAI 兼容 · 站长闲置账号开放给朋友使用</p>
+    <p class="subtitle">聚合转发 ChatGPT / Claude / DeepSeek / Gemini 等主流大模型，开放闲置账号供朋友使用</p>
+    <p class="subtitle-sub">OpenAI 兼容接口 · 支持流式输出（SSE）· Function Calling · Responses API</p>
 
     <section class="card">
       <div class="card-title">接入信息</div>
@@ -566,7 +567,7 @@ onMounted(async () => {
       <div class="endpoint"><span><span class="method">POST</span>/v1/responses</span><span class="tag">Responses API</span></div>
       <div class="endpoint"><span><span class="method">GET</span>/v1/models</span><span class="tag">模型列表</span></div>
       <div class="base-url">
-        <span>中转地址（Base URL）: {{ baseUrl }}</span>
+        <span>Base URL: {{ baseUrl }}</span>
         <button class="btn-sm" @click="copyText(baseUrl, $event.currentTarget)">复制</button>
       </div>
       <div class="base-url">
@@ -694,7 +695,7 @@ onMounted(async () => {
     </section>
 
     <footer class="footer">
-      开源 API 转发工具 · 仅供学习交流 · 请勿滥用 · 账号由站长共享
+      RelayHub · 开源项目 · 仅供学习研究使用 · 请勿用于商业用途
     </footer>
   </div>
 </template>
