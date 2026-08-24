@@ -43,6 +43,7 @@ metadata:
 
 ## 注意事项
 
-- `packages/worker/src/page.ts` 是**生成文件，绝不手改**；改完源码必须重新执行 `build:page`
+- `packages/worker/src/page.ts` 是**生成文件且已加入 .gitignore**，绝不手改也不提交；改完源码必须重新执行 `build:page`
+- `pnpm run dev` / `deploy` / `deploy:edgeone` / `typecheck` 都会自动先执行 `build:page`，无需手动生成
 - 页面为纯前端（无第三方运行时依赖注入）
 - 生成脚本会转义 `\` `` ` `` `${`，保证内嵌后 TS 模板字符串合法

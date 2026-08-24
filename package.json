@@ -28,13 +28,13 @@
     "pnpm"
   ],
   "scripts": {
-    "build:page": "pnpm -F web build && node scripts/inline-page.mjs",
-    "dev:page": "pnpm -F web dev",
-    "dev": "pnpm -F worker dev",
-    "deploy": "pnpm run build:page && pnpm -F worker deploy",
-    "deploy:edgeone": "pnpm -F worker deploy:edgeone",
-    "tail": "pnpm -F worker tail",
-    "typecheck": "pnpm -r typecheck"
+    "build:page": "pnpm --filter ./packages/web build && node scripts/inline-page.mjs",
+    "dev:page": "pnpm --filter ./packages/web dev",
+    "dev": "pnpm run build:page && pnpm --filter ./packages/worker dev",
+    "deploy": "pnpm run build:page && pnpm --filter ./packages/worker deploy",
+    "deploy:edgeone": "pnpm run build:page && pnpm --filter ./packages/worker deploy:edgeone",
+    "tail": "pnpm --filter ./packages/worker tail",
+    "typecheck": "pnpm run build:page && pnpm -r typecheck"
   },
   "packageManager": "pnpm@11.7.0"
 }

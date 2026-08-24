@@ -21,7 +21,7 @@ metadata:
 
 ## 本地预览
 
-- 整体本地测试：`pnpm run dev`（即 `pnpm -F worker dev` → `wrangler dev`），默认监听 `http://localhost:8787`
+- 整体本地测试：`pnpm run dev`（自动先 `build:page` 再 `wrangler dev`），默认监听 `http://localhost:8787`
 - 只开发测试页：`pnpm run dev:page`（Vite dev server，热更新）
 
 ## 搭配 cftunnel
@@ -30,5 +30,6 @@ metadata:
 
 ## 注意事项
 
-- `packages/worker/src/page.ts` 是生成文件，不要手改；改页面请改 `packages/web/src/`
-- EdgeOne 部署：`pnpm run deploy:edgeone`（`pnpm -F worker deploy:edgeone`）
+- `packages/worker/src/page.ts` 是**生成文件且已加入 .gitignore**，不要手改也不要提交；改页面请改 `packages/web/src/`
+- `dev` / `deploy` / `deploy:edgeone` / `typecheck` 都会自动先执行 `build:page`，无需手动生成
+- EdgeOne 部署：`pnpm run deploy:edgeone`（自动先构建页面）

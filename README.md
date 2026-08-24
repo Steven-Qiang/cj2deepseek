@@ -20,7 +20,7 @@
 cj2deepseek/
 ├── packages/
 │   ├── worker/            # Cloudflare Worker / EdgeOne 函数（核心代理逻辑）
-│   │   ├── src/           #   chat / responses / tools / upstream / page(生成)
+│   │   ├── src/           #   chat / responses / tools / upstream / page(生成,gitignore)
 │   │   ├── functions/     #   EdgeOne Pages Functions 入口
 │   │   ├── wrangler.toml  #   Cloudflare Workers 配置
 │   │   └── edgeone.json   #   EdgeOne Pages 配置
@@ -32,7 +32,7 @@ cj2deepseek/
 └── package.json           # 根编排脚本（private）
 ```
 
-**测试页工作流**：页面源码在 `packages/web/`，改完后执行 `pnpm run build:page`，Vite 会把整个页面编译成单文件 HTML，再由 `scripts/inline-page.mjs` 转义后写入 `packages/worker/src/page.ts`（生成文件，勿手改）。`pnpm run deploy` 会自动先执行这一步。
+**测试页工作流**：页面源码在 `packages/web/`，改完后执行 `pnpm run build:page`，Vite 会把整个页面编译成单文件 HTML，再由 `scripts/inline-page.mjs` 转义后写入 `packages/worker/src/page.ts`（生成文件，已加入 `.gitignore`，不提交）。`pnpm run dev` / `deploy` / `deploy:edgeone` / `typecheck` 都会自动先执行这一步，无需手动生成。
 
 ## 快速开始
 
@@ -329,10 +329,10 @@ print(response2.choices[0].message.content)
 
 ```bash
 pnpm install
-pnpm run dev          # wrangler dev，默认监听 http://localhost:8787
+pnpm run dev          # 自动先构建测试页，再 wrangler dev，默认监听 http://localhost:8787
 pnpm run dev:page     # 单独开发测试页（Vite dev server，热更新）
-pnpm run build:page   # 构建测试页并重新生成 src/page.ts
-pnpm run typecheck    # 全仓类型检查（worker + web）
+pnpm run build:page   # 手动构建测试页并重新生成 src/page.ts
+pnpm run typecheck    # 全仓类型检查（worker + web，自动先构建测试页）
 ```
 
 ## Claude Code Skills

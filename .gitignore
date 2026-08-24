@@ -5,3 +5,5 @@ dist/
 .dev.vars
 .pnpm-store/
 packages/web/dist/
+# 生成文件：由 pnpm run build:page 从 packages/web 构建而来，dev/deploy/typecheck 均自动重建
+packages/worker/src/page.ts
