@@ -1,9 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import OpenAI from 'openai';
 import CodeBlock from './components/CodeBlock.vue';
 import ToolCard, { type ToolCallItem } from './components/ToolCard.vue';
 import { md5 } from './md5';
+
+// OpenAI SDK 从 jsDelivr CDN 动态加载（+esm = esm.sh 浏览器构建），不打包进 bundle
+const OPENAI_CDN = 'https://cdn.jsdelivr.net/npm/openai@7.5.0/+esm';
+
+interface OpenAIClient {
+  chat: { completions: { create: (params: any) => Promise<any> } };
+  responses: { create: (params: any) => Promise<any> };
+}
+interface OpenAIStatic {
+  new (opts: { baseURL: string; apiKey: string; dangerouslyAllowBrowser: boolean }): OpenAIClient;
+}
 
 const DEFAULT_MODEL = 'deepseek-v4-flash';
 const ALL_MODELS = ['deepseek-v4-flash', 'deepseek-v4-pro'];
@@ -347,7 +357,9 @@ async function send() {
     return;
   }
 
-  // 用官方 OpenAI SDK 发起请求（浏览器模式，兼容任意 OpenAI 客户端）
+  // 官方 OpenAI SDK 从 CDN 动态加载（浏览器模式），驱动 chat / responses 请求
+  const mod: any = await import(/* @vite-ignore */ OPENAI_CDN);
+  const OpenAI: OpenAIStatic = mod.default;
   const client = new OpenAI({
     baseURL: baseUrl.value,
     apiKey: apiKey.value,
