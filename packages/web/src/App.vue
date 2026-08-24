@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
+import OpenAI from 'openai';
 import CodeBlock from './components/CodeBlock.vue';
 import ToolCard, { type ToolCallItem } from './components/ToolCard.vue';
+import { md5 } from './md5';
 
 const DEFAULT_MODEL = 'deepseek-v4-flash';
 const ALL_MODELS = ['deepseek-v4-flash', 'deepseek-v4-pro'];
@@ -45,7 +47,7 @@ const tabs = [
 ];
 const modelChips = ref<string[]>(ALL_MODELS);
 
-// 域名直接内嵌 + localStorage 持久化；API Key 每次访问自动生成一个假的
+// 域名直接内嵌 + localStorage 持久化；API Key 只在首次访问时生成，之后稳定复用
 const LS_BASE_URL = 'cj2deepseek:baseUrl';
 const LS_API_KEY = 'cj2deepseek:apiKey';
 const origin = window.location.origin;
@@ -59,13 +61,13 @@ function safeGet(key: string): string | null {
 }
 
 const baseUrl = ref(safeGet(LS_BASE_URL) || `${origin}/v1`);
-const apiKey = ref(generateFakeKey());
+const apiKey = ref(safeGet(LS_API_KEY) || generateFakeKey());
 
+// DeepSeek 风格假 Key：sk- + 32 位 MD5 十六进制
 function generateFakeKey(): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  let s = '';
-  for (let i = 0; i < 48; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return `sk-${s}`;
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return `sk-${md5(bytes)}`;
 }
 
 function persistLocal() {
@@ -340,38 +342,31 @@ async function send() {
     return;
   }
 
-  const path = ep.value === 'responses' ? '/v1/responses' : '/v1/chat/completions';
-  const body: Record<string, any> =
-    ep.value === 'responses'
-      ? { model: model.value, input: msg.value, stream: stream.value, top_k: topk.value }
-      : { model: model.value, messages: [], stream: stream.value, top_k: topk.value };
-  if (ep.value === 'responses') {
-    if (system.value) body.instructions = system.value;
-  } else {
-    if (system.value) body.messages.push({ role: 'system', content: system.value });
-    body.messages.push({ role: 'user', content: msg.value });
-  }
-  if (tools) {
-    body.tools = tools;
-    body.tool_choice = toolChoice.value === 'auto' ? 'auto' : toolChoice.value;
-  }
+  // 用官方 OpenAI SDK 发起请求（浏览器模式，兼容任意 OpenAI 客户端）
+  const client = new OpenAI({
+    baseURL: baseUrl.value,
+    apiKey: apiKey.value,
+    dangerouslyAllowBrowser: true,
+  });
+
+  const common: Record<string, any> = {
+    model: model.value,
+    top_k: topk.value,
+    tools: tools ?? undefined,
+    tool_choice: tools ? toolChoice.value : undefined,
+    stream: stream.value,
+  };
 
   const t0 = performance.now();
   try {
-    const resp = await fetch(path, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    if (ep.value === 'chat') {
+      const messages: any[] = [];
+      if (system.value) messages.push({ role: 'system', content: system.value });
+      messages.push({ role: 'user', content: msg.value });
 
-    if (!stream.value) {
-      const data = await resp.json();
-      const ms = ((performance.now() - t0) / 1000).toFixed(2);
-      if (!resp.ok || data.error) {
-        output.content = 'Error: ' + ((data.error && data.error.message) || resp.status);
-        stats.err = true;
-        showStats(ms + 's', '-', '-', '-', '-');
-      } else if (ep.value === 'chat') {
+      if (!stream.value) {
+        const data: any = await client.chat.completions.create({ ...common, messages } as any);
+        const ms = ((performance.now() - t0) / 1000).toFixed(2);
         const choice = data.choices?.[0] || {};
         const m = choice.message || {};
         output.content = m.content ?? '';
@@ -382,37 +377,16 @@ async function send() {
         const spd = comp > 0 ? (comp / parseFloat(ms)).toFixed(1) + ' tok/s' : '-';
         showStats(ms + 's', u.prompt_tokens ?? '-', comp || '-', u.total_tokens ?? '-', spd);
       } else {
-        let text = '';
-        const calls: ToolCallItem[] = [];
-        (data.output || []).forEach((item: any) => {
-          if (item.type === 'message' && item.content?.length) text = item.content[0].text || '';
-          else if (item.type === 'function_call') calls.push(item);
-        });
-        output.content = text;
-        output.tools = calls;
-        output.meta = `id ${data.id} · model ${data.model} · status ${data.status || 'completed'}`;
-        const u = data.usage || {};
-        const comp = u.output_tokens || 0;
-        const spd = comp > 0 ? (comp / parseFloat(ms)).toFixed(1) + ' tok/s' : '-';
-        showStats(ms + 's', u.input_tokens ?? '-', comp || '-', u.total_tokens ?? '-', spd);
-      }
-    } else {
-      output.content = '';
-      const reader = resp.body!.getReader();
-      const decoder = new TextDecoder();
-      let buf = '';
-      let content = '';
-      let usage: any = null;
-      let finishReason: string | null = null;
-      let metaId: string | null = null;
-      let metaModel: string | null = null;
-      const accTool: Record<string, { name: string; args: string }> = {};
-
-      const onSSE = (ev: string, d: any) => {
-        // chat.completion.chunk
-        if (d.choices && d.choices.length > 0) {
-          const choice = d.choices[0];
-          const delta = choice.delta || {};
+        output.content = '';
+        const s: any = await client.chat.completions.create({ ...common, messages } as any);
+        let content = '';
+        let usage: any = null;
+        let finishReason: string | null = null;
+        let metaId: string | null = null;
+        const accTool: Record<string, { name: string; args: string }> = {};
+        for await (const chunk of s) {
+          const choice = chunk.choices?.[0];
+          const delta = choice?.delta || {};
           if (delta.content) {
             content += delta.content;
             output.content = content;
@@ -427,104 +401,124 @@ async function send() {
               }
             });
           }
-          if (choice.finish_reason) finishReason = choice.finish_reason;
-          if (d.usage) usage = d.usage;
-          if (d.id) metaId = d.id;
+          if (choice?.finish_reason) finishReason = choice.finish_reason;
+          if (chunk.usage) usage = chunk.usage;
+          if (chunk.id) metaId = chunk.id;
         }
-        // responses 事件流
-        if (d.type === 'response.output_text.delta') {
-          content += d.delta || '';
-          output.content = content;
-        }
-        if (d.type === 'response.function_call_arguments.done') {
-          const key = 'r' + d.item_id;
-          accTool[key] = accTool[key] || { name: '', args: '' };
-          accTool[key].args = d.arguments || '';
-        }
-        if (d.type === 'response.output_item.added' && d.item && d.item.type === 'function_call') {
-          const key = 'r' + d.item.id;
-          accTool[key] = accTool[key] || { name: d.item.name || '', args: '' };
-        }
-        if (d.type === 'response.output_item.done' && d.item && d.item.type === 'function_call') {
-          accTool['r' + d.item.id] = { name: d.item.name || '', args: d.item.arguments || '' };
-        }
-        if (d.type === 'response.completed') {
-          usage = d.response && d.response.usage;
-          metaId = d.response && d.response.id;
-          metaModel = d.response && d.response.model;
-          finishReason = finishReason || 'completed';
-        }
-        if (d.type === 'response.created' && d.response) {
-          metaId = d.response.id;
-          metaModel = d.response.model;
-        }
-        void ev;
-      };
-
-      let ev = '';
-      const push = (line: string) => {
-        if (line.startsWith('event: ')) {
-          ev = line.slice(7).trim();
-          return;
-        }
-        if (line.startsWith('data: ')) {
-          const d = line.slice(6).trim();
-          if (d === '[DONE]') return;
-          try {
-            onSSE(ev, JSON.parse(d));
-          } catch {
-            /* 忽略无法解析的行 */
-          }
-          ev = '';
-        }
-      };
-
-      while (true) {
-        const r = await reader.read();
-        if (r.done) break;
-        buf += decoder.decode(r.value, { stream: true });
-        const lines = buf.split('\n');
-        buf = lines.pop()!;
-        lines.forEach(push);
+        finishStream(t0, content, usage, finishReason, metaId, null, accTool);
       }
-      if (buf.trim() !== '') push(buf);
-
-      const calls: ToolCallItem[] = Object.values(accTool)
-        .filter((v) => v.name)
-        .map((v) => ({ function: { name: v.name, arguments: v.args } }));
-      output.tools = calls;
-
-      const ms = ((performance.now() - t0) / 1000).toFixed(2);
-      const kind = (metaId ?? '').startsWith('resp_') ? 'responses' : 'chat';
-      let promptN: any, compN: any, totalN: any;
-      if (usage) {
-        if (kind === 'responses') {
-          promptN = usage.input_tokens;
-          compN = usage.output_tokens;
-        } else {
-          promptN = usage.prompt_tokens;
-          compN = usage.completion_tokens;
-        }
-        totalN = usage.total_tokens;
-      }
-      if (content || calls.length) {
-        output.meta = `id ${metaId || '-'} · model ${metaModel || model.value} · finish_reason ${finishReason || 'stop'}`;
-        const compVal = compN || 0;
-        const spd = compVal > 0 ? (compVal / parseFloat(ms)).toFixed(1) + ' tok/s' : '-';
-        showStats(ms + 's', promptN ?? '-', compVal || '-', totalN ?? '-', spd);
+    } else {
+      if (!stream.value) {
+        const data: any = await client.responses.create({
+          ...common,
+          input: msg.value,
+          instructions: system.value || undefined,
+        } as any);
+        const ms = ((performance.now() - t0) / 1000).toFixed(2);
+        let text = '';
+        const calls: ToolCallItem[] = [];
+        (data.output || []).forEach((item: any) => {
+          if (item.type === 'message' && item.content?.length) text = item.content[0].text || '';
+          else if (item.type === 'function_call') calls.push(item);
+        });
+        output.content = text;
+        output.tools = calls;
+        output.meta = `id ${data.id} · model ${data.model} · status ${data.status || 'completed'}`;
+        const u = data.usage || {};
+        const comp = u.output_tokens || 0;
+        const spd = comp > 0 ? (comp / parseFloat(ms)).toFixed(1) + ' tok/s' : '-';
+        showStats(ms + 's', u.input_tokens ?? '-', comp || '-', u.total_tokens ?? '-', spd);
       } else {
-        output.content = '(空响应，请稍后重试)';
-        stats.err = true;
-        showStats(ms + 's', '-', '-', '-', '-');
+        output.content = '';
+        const s: any = await client.responses.create({
+          ...common,
+          input: msg.value,
+          instructions: system.value || undefined,
+        } as any);
+        let content = '';
+        let usage: any = null;
+        let finishReason: string | null = null;
+        let metaId: string | null = null;
+        let metaModel: string | null = null;
+        const accTool: Record<string, { name: string; args: string }> = {};
+        for await (const event of s) {
+          if (event.type === 'response.output_text.delta') {
+            content += event.delta || '';
+            output.content = content;
+          }
+          if (event.type === 'response.function_call_arguments.done') {
+            const key = 'r' + event.item_id;
+            accTool[key] = accTool[key] || { name: '', args: '' };
+            accTool[key].args = event.arguments || '';
+          }
+          if (event.type === 'response.output_item.added' && event.item?.type === 'function_call') {
+            const key = 'r' + event.item.id;
+            accTool[key] = accTool[key] || { name: event.item.name || '', args: '' };
+          }
+          if (event.type === 'response.output_item.done' && event.item?.type === 'function_call') {
+            accTool['r' + event.item.id] = { name: event.item.name || '', args: event.item.arguments || '' };
+          }
+          if (event.type === 'response.completed') {
+            usage = event.response?.usage;
+            metaId = event.response?.id;
+            metaModel = event.response?.model;
+            finishReason = finishReason || 'completed';
+          }
+          if (event.type === 'response.created') {
+            metaId = event.response?.id;
+            metaModel = event.response?.model;
+          }
+        }
+        finishStream(t0, content, usage, finishReason, metaId, metaModel, accTool);
       }
     }
   } catch (e: any) {
-    output.content = '请求失败: ' + (e?.message ?? e);
+    output.content = '请求失败: ' + (e?.error?.message || e?.message || String(e));
     const ms = ((performance.now() - t0) / 1000).toFixed(2);
     stats.err = true;
     showStats(ms + 's', '-', '-', '-', '-');
   }
   sending.value = false;
+}
+
+/** 流式收尾：汇总工具调用 / usage / meta / 统计 */
+function finishStream(
+  t0: number,
+  content: string,
+  usage: any,
+  finishReason: string | null,
+  metaId: string | null,
+  metaModel: string | null,
+  accTool: Record<string, { name: string; args: string }>,
+) {
+  const calls: ToolCallItem[] = Object.values(accTool)
+    .filter((v) => v.name)
+    .map((v) => ({ function: { name: v.name, arguments: v.args } }));
+  output.tools = calls;
+
+  const ms = ((performance.now() - t0) / 1000).toFixed(2);
+  const kind = (metaId ?? '').startsWith('resp_') ? 'responses' : 'chat';
+  let promptN: any, compN: any, totalN: any;
+  if (usage) {
+    if (kind === 'responses') {
+      promptN = usage.input_tokens;
+      compN = usage.output_tokens;
+    } else {
+      promptN = usage.prompt_tokens;
+      compN = usage.completion_tokens;
+    }
+    totalN = usage.total_tokens;
+  }
+  if (content || calls.length) {
+    output.meta = `id ${metaId || '-'} · model ${metaModel || model.value} · finish_reason ${finishReason || 'stop'}`;
+    const compVal = compN || 0;
+    const spd = compVal > 0 ? (compVal / parseFloat(ms)).toFixed(1) + ' tok/s' : '-';
+    showStats(ms + 's', promptN ?? '-', compVal || '-', totalN ?? '-', spd);
+  } else {
+    output.content = '(空响应，请稍后重试)';
+    stats.err = true;
+    showStats(ms + 's', '-', '-', '-', '-');
+  }
 }
 
 onMounted(async () => {
