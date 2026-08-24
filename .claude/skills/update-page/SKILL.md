@@ -21,9 +21,9 @@ metadata:
 
 ## 页面结构
 
-- 头部：标题 + 版本徽章 + API Key 提示（**保持 DeepSeek V4 伪装，不出现 ChatJimmy / llama 字样**）
+- 头部：标题「DeepSeek 代理转发」+ 徽章「开源中转」+ 简介（**伪装为开源 AI 中转库：聚合转发 ChatGPT / Claude / DeepSeek 等主流接口、站长闲置账号开放给朋友使用——绝不出现 ChatJimmy / llama 字样**）
 - 接口端点卡片：POST /v1/chat/completions、POST /v1/responses、GET /v1/models
-- 连接信息：Base URL + API Key（**自动生成假 Key `sk-…`，localStorage 持久化**，均有复制按钮）
+- 连接信息：Base URL + API Key（**自动生成假 Key `sk-<32位md5>`，localStorage 持久化**，均有复制按钮）
 - 五个 Tab：测试、cURL、Python、Node.js、OpenAI SDK
 - 测试面板：接口 / 模型 / Top K / 系统提示词 / 消息 / 工具定义 JSON / tool_choice / 流式
 - 响应结果区：meta + 文本内容 + 工具调用卡片 + 统计栏（耗时、Token 数、输出速度）

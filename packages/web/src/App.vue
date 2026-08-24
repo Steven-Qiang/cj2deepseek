@@ -543,10 +543,10 @@ onMounted(async () => {
 <template>
   <div class="container">
     <header class="header">
-      <h1>DeepSeek V4</h1>
-      <span class="badge">v4.0</span>
+      <h1>DeepSeek 代理转发</h1>
+      <span class="badge">开源中转</span>
     </header>
-    <p class="subtitle">DeepSeek V4 OpenAI 兼容 API · deepseek-v4-flash / deepseek-v4-pro · 支持 Function Calling 与 Responses API</p>
+    <p class="subtitle">专业的 DeepSeek 代理转发工具 · 开源中转库 · 聚合转发 ChatGPT / Claude / DeepSeek 等主流 AI 接口 · 站长闲置账号开放给朋友使用</p>
 
     <section class="card">
       <div class="card-title">接口端点</div>
