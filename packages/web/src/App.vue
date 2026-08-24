@@ -54,6 +54,7 @@ const tabs = [
   { id: 'python', label: 'Python' },
   { id: 'node', label: 'Node.js' },
   { id: 'sdk', label: 'OpenAI SDK' },
+  { id: 'agents', label: 'Agent 接入' },
 ];
 const modelChips = ref<string[]>(ALL_MODELS);
 
@@ -312,6 +313,74 @@ const resp = await client.responses.create({
 for (const item of resp.output) {
   if (item.type === "message") {
     console.log(item.content[0].text);
+  }
+}`,
+  },
+]);
+
+const agentSamples = computed(() => [
+  {
+    title: 'OpenAI Agents SDK（Python）· 函数工具',
+    code: `import os
+
+# 设置中转地址与密钥（Agent SDK 底层走 OpenAI 客户端）
+os.environ["OPENAI_BASE_URL"] = "${baseUrl.value}"
+os.environ["OPENAI_API_KEY"] = "${apiKey.value}"
+
+from agents import Agent, Runner, function_tool
+
+@function_tool
+def get_weather(city: str) -> str:
+    """查询指定城市的天气"""
+    return f"{city} 晴，25°C"
+
+agent = Agent(
+    name="助手",
+    instructions="你是助手，可调用工具回答天气等问题。",
+    model="${DEFAULT_MODEL}",
+    tools=[get_weather],
+)
+
+result = Runner.run_sync(agent, "北京今天天气怎么样？")
+print(result.final_output)`,
+  },
+  {
+    title: 'LangChain（Python）· ChatOpenAI + 工具绑定',
+    code: `from langchain_openai import ChatOpenAI
+from langchain_core.tools import tool
+
+@tool
+def get_weather(city: str) -> str:
+    """查询指定城市的天气"""
+    return f"{city} 晴，25°C"
+
+llm = ChatOpenAI(
+    base_url="${baseUrl.value}",
+    api_key="${apiKey.value}",
+    model="${DEFAULT_MODEL}",
+    temperature=0,
+)
+llm = llm.bind_tools([get_weather])
+resp = llm.invoke("北京今天天气怎么样？")
+print(resp.tool_calls)   # 工具调用结果
+print(resp.content)`,
+  },
+  {
+    title: 'OpenCode · 配置自定义模型提供商',
+    code: `// ~/.config/opencode/opencode.json
+{
+  "provider": {
+    "relayhub": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "RelayHub",
+      "options": {
+        "baseURL": "${baseUrl.value}",
+        "apiKey": "${apiKey.value}"
+      },
+      "models": {
+        "${DEFAULT_MODEL}": { "name": "DeepSeek V4 Flash" }
+      }
+    }
   }
 }`,
   },
@@ -590,45 +659,26 @@ onMounted(async () => {
         >{{ t.label }}</div>
       </div>
 
-      <div v-show="activeTab === 'test'">
-        <div class="row">
-          <div>
-            <label>接口</label>
+      <div v-show="activeTab === 'test'" class="panel">
+        <div class="form-grid">
+          <div class="field">
+            <label>接口通道</label>
             <select v-model="ep">
               <option value="chat">/v1/chat/completions</option>
               <option value="responses">/v1/responses</option>
             </select>
           </div>
-          <div>
+          <div class="field">
             <label>模型</label>
             <select v-model="model">
               <option v-for="m in ALL_MODELS" :key="m" :value="m">{{ m }}</option>
             </select>
           </div>
-          <div>
+          <div class="field">
             <label>Top K</label>
             <input v-model.number="topk" type="number" min="1" max="50" />
           </div>
-        </div>
-        <div style="margin-bottom: .65rem">
-          <label>系统提示词（Responses API 时作为 instructions）</label>
-          <textarea v-model="system" rows="2" placeholder="可选"></textarea>
-        </div>
-        <div style="margin-bottom: .65rem">
-          <label>消息内容</label>
-          <textarea v-model="msg" rows="3" placeholder="输入消息..."></textarea>
-        </div>
-        <div style="margin-bottom: .65rem">
-          <label>工具定义（Tools JSON，可选，留空则不启用 Function Calling）</label>
-          <textarea
-            v-model="toolsRaw"
-            class="mono"
-            rows="4"
-            placeholder='[{"type":"function","function":{"name":"get_weather","description":"查询指定城市的天气","parameters":{"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}}}]'
-          ></textarea>
-        </div>
-        <div class="row">
-          <div>
+          <div class="field">
             <label>tool_choice</label>
             <select v-model="toolChoice">
               <option value="auto">auto</option>
@@ -636,15 +686,30 @@ onMounted(async () => {
               <option value="required">required</option>
             </select>
           </div>
-          <div style="display: flex; align-items: flex-end">
-            <div class="check-row">
-              <input v-model="stream" id="stream" type="checkbox" />
-              <label for="stream">流式输出</label>
-            </div>
-          </div>
         </div>
-        <button class="btn-primary" :disabled="sending" @click="send">发送请求</button>
-        <span class="muted" style="margin-left: .6rem">工具调用会以卡片形式展示在响应区</span>
+        <div class="field">
+          <label class="check-label"><input v-model="stream" type="checkbox" /> 流式输出（SSE）</label>
+        </div>
+        <div class="field">
+          <label>系统提示词（Responses API 时作为 instructions）</label>
+          <textarea v-model="system" rows="2" placeholder="可选"></textarea>
+        </div>
+        <div class="field">
+          <label>消息内容</label>
+          <textarea v-model="msg" rows="3" placeholder="输入消息..."></textarea>
+        </div>
+        <div class="field">
+          <label>工具定义（Tools JSON，留空则不启用 Function Calling）</label>
+          <textarea
+            v-model="toolsRaw"
+            class="mono"
+            rows="4"
+            placeholder='[{"type":"function","function":{"name":"get_weather","description":"查询指定城市的天气","parameters":{"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}}}]'
+          ></textarea>
+        </div>
+        <div class="actions">
+          <button class="btn-primary" :disabled="sending" @click="send">发送请求</button>
+        </div>
       </div>
 
       <div v-show="activeTab === 'curl'">
@@ -670,6 +735,14 @@ onMounted(async () => {
 
       <div v-show="activeTab === 'sdk'">
         <template v-for="s in sdkSamples" :key="s.title">
+          <div class="code-title">{{ s.title }}</div>
+          <CodeBlock :code="s.code" />
+        </template>
+      </div>
+
+      <div v-show="activeTab === 'agents'">
+        <p class="intro">本中转为 OpenAI 兼容接口，支持 Function Calling（tools）与 Responses API，主流 Agent 框架可直接接入。Base URL 与 API Key 见上方「接入信息」，请使用您自己的访问密钥。</p>
+        <template v-for="s in agentSamples" :key="s.title">
           <div class="code-title">{{ s.title }}</div>
           <CodeBlock :code="s.code" />
         </template>
