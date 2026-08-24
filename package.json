@@ -1,15 +1,16 @@
 {
   "name": "cj2deepseek",
   "version": "1.1.0",
+  "private": true,
   "description": "基于 ChatJimmy 实现的 OpenAI 兼容 API，支持 Cloudflare Workers 和 EdgeOne Pages。",
+  "license": "MIT",
+  "author": "Steven-Qiang",
   "repository": {
     "type": "git",
     "url": "https://github.com/Steven-Qiang/cj2api.git"
   },
   "homepage": "https://github.com/Steven-Qiang/cj2api#readme",
   "bugs": "https://github.com/Steven-Qiang/cj2api/issues",
-  "license": "MIT",
-  "author": "Steven-Qiang",
   "keywords": [
     "deepseek",
     "openai",
@@ -22,27 +23,18 @@
     "proxy",
     "llm",
     "serverless",
-    "prank"
+    "prank",
+    "monorepo",
+    "pnpm"
   ],
-  "files": [
-    "src/",
-    "functions/",
-    "wrangler.toml",
-    "edgeone.json",
-    "tsconfig.json"
-  ],
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "deploy:edgeone": "edgeone pages deploy",
-    "tail": "wrangler tail"
+    "build:page": "pnpm -F web build && node scripts/inline-page.mjs",
+    "dev:page": "pnpm -F web dev",
+    "dev": "pnpm -F worker dev",
+    "deploy": "pnpm run build:page && pnpm -F worker deploy",
+    "deploy:edgeone": "pnpm -F worker deploy:edgeone",
+    "tail": "pnpm -F worker tail",
+    "typecheck": "pnpm -r typecheck"
   },
-  "devDependencies": {
-    "@cloudflare/workers-types": "^4.20241218.0",
-    "typescript": "^5.7.0",
-    "wrangler": "^4.125.0"
-  }
+  "packageManager": "pnpm@11.7.0"
 }

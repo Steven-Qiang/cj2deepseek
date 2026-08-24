@@ -1,0 +1,47 @@
+{
+  "name": "cj2deepseek",
+  "version": "1.1.0",
+  "private": true,
+  "description": "恶搞项目：把 ChatJimmy 伪装成 DeepSeek API 的 OpenAI 兼容代理（qingchencloud/cj2api 的 fork），支持 Function Calling 与 Responses API，可部署到 Cloudflare Workers 和 EdgeOne Pages。",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Steven-Qiang/cj2api.git"
+  },
+  "homepage": "https://github.com/Steven-Qiang/cj2api#readme",
+  "bugs": "https://github.com/Steven-Qiang/cj2api/issues",
+  "license": "MIT",
+  "author": "Steven-Qiang",
+  "keywords": [
+    "deepseek",
+    "openai",
+    "api",
+    "function-calling",
+    "tools",
+    "cloudflare-workers",
+    "edgeone-pages",
+    "chatjimmy",
+    "proxy",
+    "llm",
+    "serverless",
+    "prank"
+  ],
+  "files": [
+    "src/",
+    "functions/",
+    "wrangler.toml",
+    "edgeone.json",
+    "tsconfig.json"
+  ],
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:edgeone": "edgeone pages deploy",
+    "tail": "wrangler tail",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241218.0",
+    "typescript": "^5.7.0",
+    "wrangler": "^4.125.0"
+  }
+}

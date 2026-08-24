@@ -3,3 +3,5 @@ dist/
 .wrangler/
 *.log
 .dev.vars
+.pnpm-store/
+packages/web/dist/

@@ -9,16 +9,36 @@
 - 🛠 **Function Calling** — 支持 `tools` / `tool_choice`，历史 `tool_calls` / `tool` 消息自动转换，可直接驱动 agent 工具循环
 - 🧩 **Responses API** — 新增 OpenAI Responses 兼容接口（`/v1/responses`），支持流式事件序列
 - ⚡ **多平台部署** — 同时支持 Cloudflare Workers 和腾讯云 EdgeOne Pages
-- 🖥 **自带测试页** — 访问根路径即可在线测试，支持工具调用可视化、流式输出、实时 Token 统计
-- 📊 **Token 统计** — 响应中包含 `usage` 字段
+- 🖥 **自带测试页** — Vue 3 + TypeScript 构建，支持工具调用可视化、流式输出、实时 Token 统计
+- 📦 **pnpm monorepo** — `packages/worker`（Worker 核心）+ `packages/web`（测试页源码，编译后内嵌进 Worker）
 
 > ⚠️ **免责声明**：本项目仅供学习研究与朋友间娱乐，请勿用于商业用途或生产环境。
+
+## 仓库结构（pnpm monorepo）
+
+```
+cj2deepseek/
+├── packages/
+│   ├── worker/            # Cloudflare Worker / EdgeOne 函数（核心代理逻辑）
+│   │   ├── src/           #   chat / responses / tools / upstream / page(生成)
+│   │   ├── functions/     #   EdgeOne Pages Functions 入口
+│   │   ├── wrangler.toml  #   Cloudflare Workers 配置
+│   │   └── edgeone.json   #   EdgeOne Pages 配置
+│   └── web/               # 内置测试页面（Vue 3 + TypeScript + Vite）
+│       └── src/App.vue    #   页面源码（改这里！）
+├── scripts/
+│   └── inline-page.mjs    # 把 web 构建产物内嵌进 worker/src/page.ts
+├── pnpm-workspace.yaml
+└── package.json           # 根编排脚本（private）
+```
+
+**测试页工作流**：页面源码在 `packages/web/`，改完后执行 `pnpm run build:page`，Vite 会把整个页面编译成单文件 HTML，再由 `scripts/inline-page.mjs` 转义后写入 `packages/worker/src/page.ts`（生成文件，勿手改）。`pnpm run deploy` 会自动先执行这一步。
 
 ## 快速开始
 
 ### 前置条件
 
-- [Node.js](https://nodejs.org/) 18+
+- [Node.js](https://nodejs.org/) 18+ 与 [pnpm](https://pnpm.io/)（推荐 9+）
 - [Cloudflare 账号](https://dash.cloudflare.com/sign-up) 或 [腾讯云账号](https://console.cloud.tencent.com/)
 
 ### 方式一：部署到 Cloudflare Workers (从 GitHub 克隆)
@@ -26,12 +46,12 @@
 ```bash
 git clone https://github.com/Steven-Qiang/cj2api.git
 cd cj2api
-npm install
+pnpm install
 npx wrangler login    # 首次使用需登录 Cloudflare
-npm run deploy
+pnpm run deploy
 ```
 
-部署完成后，Wrangler 会输出你的 Worker URL，形如 `https://cj2deepseek.<你的子域>.workers.dev`。
+`pnpm run deploy` = 构建测试页（`build:page`）→ `wrangler deploy`。部署完成后，Wrangler 会输出你的 Worker URL，形如 `https://cj2deepseek.<你的子域>.workers.dev`。
 
 ### 方式二：部署到腾讯云 EdgeOne Pages (推荐国内直连)
 
@@ -41,15 +61,16 @@ EdgeOne Pages 提供了更佳的国内访问体验，支持一键部署：
 
 或者手动部署：
 ```bash
-npm install
-npm run deploy:edgeone
+pnpm install
+pnpm run build:page
+pnpm run deploy:edgeone
 ```
 
 > **国内访问提示：**
 > - **Cloudflare**: `*.workers.dev` 域名在国内访问可能不稳定，建议绑定自定义域名走 CDN，或通过 Dashboard → Workers → cj2deepseek → Settings → Domains & Routes 绑定域名。
 > - **EdgeOne**: 默认提供国内边缘节点加速，延迟极低，无需额外配置即可直连。
 
-> **提示：** 如客户端要求填写 API Key，随意输入任意字符串即可。
+> **提示：** 客户端要求填写 API Key 时，直接用测试页上自动生成的假 Key（`sk-…`）即可——任意字符串都行，页面每次访问都会重新生成一个并存入 localStorage。
 
 ## 恶搞原理（工作原理）
 
@@ -76,7 +97,7 @@ npm run deploy:edgeone
 └─────────────────────────────────────────────────────────┘
 ```
 
-关键点：**客户端请求什么模型都无所谓**，上游固定使用 `llama3.1-8B`（见 `src/utils.ts` 的 `UPSTREAM_MODEL`），模型名只是对外展示的假名。工具调用则通过 `<tool_call>` / `<tool_result>` 文本块与底层模型交互，再转换回标准 OpenAI `tool_calls` 格式。
+关键点：**客户端请求什么模型都无所谓**，上游固定使用 `llama3.1-8B`（见 `packages/worker/src/utils.ts` 的 `UPSTREAM_MODEL`），模型名只是对外展示的假名。工具调用则通过 `<tool_call>` / `<tool_result>` 文本块与底层模型交互，再转换回标准 OpenAI `tool_calls` 格式。
 
 ## API 接口
 
@@ -307,31 +328,11 @@ print(response2.choices[0].message.content)
 ## 本地开发
 
 ```bash
-git clone https://github.com/Steven-Qiang/cj2api.git
-cd cj2api
-npm install
-npm run dev
-# 默认监听 http://localhost:8787
-```
-
-## 项目结构
-
-```
-cj2deepseek/
-├── src/                # 核心业务逻辑 (跨平台共享)
-│   ├── index.ts        # Cloudflare Workers 入口
-│   ├── chat.ts         # Chat Completions 处理 + 上游执行/重试
-│   ├── responses.ts    # Responses API 处理
-│   ├── tools.ts        # 工具翻译：<tool_call> 提示词 / 解析 / 消息转换
-│   ├── upstream.ts     # ChatJimmy 上游调用
-│   ├── page.ts         # 内置测试页面
-│   └── utils.ts        # 模型假名 / ID / usage / CORS
-├── functions/          # EdgeOne Pages Functions 入口
-├── wrangler.toml       # Cloudflare Workers 配置
-├── edgeone.json        # EdgeOne Pages 配置
-├── tsconfig.json       # TypeScript 配置
-├── package.json
-└── README.md
+pnpm install
+pnpm run dev          # wrangler dev，默认监听 http://localhost:8787
+pnpm run dev:page     # 单独开发测试页（Vite dev server，热更新）
+pnpm run build:page   # 构建测试页并重新生成 src/page.ts
+pnpm run typecheck    # 全仓类型检查（worker + web）
 ```
 
 ## Claude Code Skills
@@ -340,9 +341,9 @@ cj2deepseek/
 
 | Skill | 说明 |
 |-------|------|
-| `/release` | 版本发布 |
-| `/deploy` | 部署到 Cloudflare Workers |
-| `/update-page` | 维护内置测试页面 |
+| `/release` | 版本发布（bump + tag + push） |
+| `/deploy` | 部署到 Cloudflare Workers（自动先构建测试页） |
+| `/update-page` | 维护内置测试页面（改 packages/web 源码 → build:page） |
 
 ## 免责声明
 

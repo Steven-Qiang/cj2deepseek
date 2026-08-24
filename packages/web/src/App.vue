@@ -1,0 +1,694 @@
+<script setup lang="ts">
+import { computed, onMounted, reactive, ref } from 'vue';
+import CodeBlock from './components/CodeBlock.vue';
+import ToolCard, { type ToolCallItem } from './components/ToolCard.vue';
+
+const DEFAULT_MODEL = 'deepseek-v4-flash';
+const ALL_MODELS = ['deepseek-v4-flash', 'deepseek-v4-pro'];
+
+// ---------- 表单状态 ----------
+type Endpoint = 'chat' | 'responses';
+const ep = ref<Endpoint>('chat');
+const model = ref(DEFAULT_MODEL);
+const topk = ref(8);
+const system = ref('');
+const msg = ref('你好');
+const toolsRaw = ref('');
+const toolChoice = ref('auto');
+const stream = ref(true);
+const sending = ref(false);
+
+// ---------- 输出状态 ----------
+const output = reactive<{ meta: string; content: string; tools: ToolCallItem[] }>({
+  meta: '',
+  content: '点击「发送请求」查看结果',
+  tools: [],
+});
+const stats = reactive({
+  visible: false,
+  time: '-',
+  prompt: '-',
+  comp: '-',
+  total: '-',
+  speed: '-',
+  err: false,
+});
+
+// ---------- 页面杂项 ----------
+const activeTab = ref('test');
+const tabs = [
+  { id: 'test', label: '测试' },
+  { id: 'curl', label: 'cURL' },
+  { id: 'python', label: 'Python' },
+  { id: 'node', label: 'Node.js' },
+  { id: 'sdk', label: 'OpenAI SDK' },
+];
+const modelChips = ref<string[]>(ALL_MODELS);
+
+// 域名直接内嵌 + localStorage 持久化；API Key 每次访问自动生成一个假的
+const LS_BASE_URL = 'cj2deepseek:baseUrl';
+const LS_API_KEY = 'cj2deepseek:apiKey';
+const origin = window.location.origin;
+
+function safeGet(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+const baseUrl = ref(safeGet(LS_BASE_URL) || `${origin}/v1`);
+const apiKey = ref(generateFakeKey());
+
+function generateFakeKey(): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let s = '';
+  for (let i = 0; i < 48; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return `sk-${s}`;
+}
+
+function regenerateKey() {
+  apiKey.value = generateFakeKey();
+  persistLocal();
+}
+
+function persistLocal() {
+  try {
+    localStorage.setItem(LS_BASE_URL, baseUrl.value);
+    localStorage.setItem(LS_API_KEY, apiKey.value);
+  } catch {
+    /* 隐私模式下可能抛错，忽略 */
+  }
+}
+
+function copyText(text: string, btn: EventTarget | null) {
+  const el = btn as HTMLButtonElement | null;
+  if (!el) return;
+  navigator.clipboard.writeText(text);
+  el.textContent = '已复制';
+  setTimeout(() => (el.textContent = '复制'), 1500);
+}
+
+// ---------- 代码示例（域名与假 API Key 直接内嵌，无需占位符替换） ----------
+const curlSamples = computed(() => [
+  {
+    title: 'Chat Completions',
+    code: `curl -X POST ${baseUrl.value}/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${apiKey.value}" \\
+  -d '{
+  "model": "${DEFAULT_MODEL}",
+  "messages": [{"role": "user", "content": "你好"}],
+  "stream": false
+}'`,
+  },
+  {
+    title: 'Function Calling',
+    code: `curl -X POST ${baseUrl.value}/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${apiKey.value}" \\
+  -d '{
+  "model": "${DEFAULT_MODEL}",
+  "messages": [{"role": "user", "content": "北京今天天气怎么样？"}],
+  "tools": [{
+    "type": "function",
+    "function": {
+      "name": "get_weather",
+      "description": "查询指定城市的天气",
+      "parameters": {
+        "type": "object",
+        "properties": {"city": {"type": "string"}},
+        "required": ["city"]
+      }
+    }
+  }],
+  "stream": false
+}'`,
+  },
+  {
+    title: 'Responses API',
+    code: `curl -X POST ${baseUrl.value}/responses \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer ${apiKey.value}" \\
+  -d '{
+  "model": "${DEFAULT_MODEL}",
+  "input": "北京今天天气怎么样？",
+  "tools": [{
+    "type": "function",
+    "name": "get_weather",
+    "description": "查询指定城市的天气",
+    "parameters": {
+      "type": "object",
+      "properties": {"city": {"type": "string"}},
+      "required": ["city"]
+    }
+  }],
+  "stream": false
+}'`,
+  },
+]);
+
+const pythonSamples = computed(() => [
+  {
+    title: 'Chat Completions',
+    code: `import requests
+
+resp = requests.post(
+    "${baseUrl.value}/chat/completions",
+    headers={"Authorization": "Bearer ${apiKey.value}"},
+    json={
+        "model": "${DEFAULT_MODEL}",
+        "messages": [{"role": "user", "content": "你好"}],
+        "stream": False
+    }
+)
+print(resp.json()["choices"][0]["message"]["content"])`,
+  },
+  {
+    title: 'Responses API',
+    code: `import requests
+
+resp = requests.post(
+    "${baseUrl.value}/responses",
+    headers={"Authorization": "Bearer ${apiKey.value}"},
+    json={
+        "model": "${DEFAULT_MODEL}",
+        "input": "你好",
+        "stream": False
+    }
+)
+data = resp.json()
+for item in data["output"]:
+    if item["type"] == "message":
+        print(item["content"][0]["text"])`,
+  },
+]);
+
+const nodeSamples = computed(() => [
+  {
+    title: 'Chat Completions',
+    code: `const resp = await fetch("${baseUrl.value}/chat/completions", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer ${apiKey.value}"
+  },
+  body: JSON.stringify({
+    model: "${DEFAULT_MODEL}",
+    messages: [{ role: "user", content: "你好" }],
+    stream: false
+  })
+});
+const data = await resp.json();
+console.log(data.choices[0].message.content);`,
+  },
+  {
+    title: 'Function Calling',
+    code: `const resp = await fetch("${baseUrl.value}/chat/completions", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer ${apiKey.value}"
+  },
+  body: JSON.stringify({
+    model: "${DEFAULT_MODEL}",
+    messages: [{ role: "user", content: "北京今天天气怎么样？" }],
+    tools: [{
+      type: "function",
+      function: {
+        name: "get_weather",
+        description: "查询指定城市的天气",
+        parameters: {
+          type: "object",
+          properties: { city: { type: "string" } },
+          required: ["city"]
+        }
+      }
+    }],
+    stream: false
+  })
+});
+const data = await resp.json();
+const msg = data.choices[0].message;
+if (msg.tool_calls) {
+  msg.tool_calls.forEach(c => console.log(c.function.name, c.function.arguments));
+}`,
+  },
+]);
+
+const sdkSamples = computed(() => [
+  {
+    title: 'OpenAI SDK（Python）· Chat Completions + 工具循环',
+    code: `from openai import OpenAI
+
+client = OpenAI(
+    base_url="${baseUrl.value}",
+    api_key="${apiKey.value}"
+)
+
+tools = [{
+    "type": "function",
+    "function": {
+        "name": "get_weather",
+        "description": "查询指定城市的天气",
+        "parameters": {
+            "type": "object",
+            "properties": {"city": {"type": "string"}},
+            "required": ["city"],
+        },
+    },
+}]
+
+response = client.chat.completions.create(
+    model="${DEFAULT_MODEL}",
+    messages=[{"role": "user", "content": "北京今天天气怎么样？"}],
+    tools=tools,
+)
+
+msg = response.choices[0].message
+if msg.tool_calls:
+    for call in msg.tool_calls:
+        print(call.function.name, call.function.arguments)
+
+# 把工具结果喂回去，继续对话
+response2 = client.chat.completions.create(
+    model="${DEFAULT_MODEL}",
+    messages=[
+        {"role": "user", "content": "北京今天天气怎么样？"},
+        msg,
+        {"role": "tool", "tool_call_id": msg.tool_calls[0].id, "content": "晴，25°C"},
+    ],
+    tools=tools,
+)
+print(response2.choices[0].message.content)`,
+  },
+  {
+    title: 'OpenAI SDK（Node.js）· Responses API',
+    code: `import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "${baseUrl.value}",
+  apiKey: "${apiKey.value}",
+});
+
+const resp = await client.responses.create({
+  model: "${DEFAULT_MODEL}",
+  input: "你好",
+});
+
+for (const item of resp.output) {
+  if (item.type === "message") {
+    console.log(item.content[0].text);
+  }
+}`,
+  },
+]);
+
+// ---------- 请求逻辑 ----------
+function showStats(time: string, prompt: string, comp: string, total: string, speed: string) {
+  stats.visible = true;
+  stats.time = time;
+  stats.prompt = prompt;
+  stats.comp = comp;
+  stats.total = total;
+  stats.speed = speed;
+}
+
+function readTools(): any[] | null {
+  const raw = toolsRaw.value.trim();
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) throw new Error('tools 必须是 JSON 数组');
+    return parsed;
+  } catch (e: any) {
+    throw new Error('工具定义 JSON 解析失败: ' + (e?.message ?? e));
+  }
+}
+
+async function send() {
+  if (sending.value) return;
+  sending.value = true;
+  stats.visible = false;
+  output.meta = '';
+  output.tools = [];
+  output.content = '请求中...';
+
+  let tools: any[] | null = null;
+  try {
+    tools = readTools();
+  } catch (e: any) {
+    output.content = e.message;
+    stats.err = true;
+    sending.value = false;
+    return;
+  }
+
+  const path = ep.value === 'responses' ? '/v1/responses' : '/v1/chat/completions';
+  const body: Record<string, any> =
+    ep.value === 'responses'
+      ? { model: model.value, input: msg.value, stream: stream.value, top_k: topk.value }
+      : { model: model.value, messages: [], stream: stream.value, top_k: topk.value };
+  if (ep.value === 'responses') {
+    if (system.value) body.instructions = system.value;
+  } else {
+    if (system.value) body.messages.push({ role: 'system', content: system.value });
+    body.messages.push({ role: 'user', content: msg.value });
+  }
+  if (tools) {
+    body.tools = tools;
+    body.tool_choice = toolChoice.value === 'auto' ? 'auto' : toolChoice.value;
+  }
+
+  const t0 = performance.now();
+  try {
+    const resp = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!stream.value) {
+      const data = await resp.json();
+      const ms = ((performance.now() - t0) / 1000).toFixed(2);
+      if (!resp.ok || data.error) {
+        output.content = 'Error: ' + ((data.error && data.error.message) || resp.status);
+        stats.err = true;
+        showStats(ms + 's', '-', '-', '-', '-');
+      } else if (ep.value === 'chat') {
+        const choice = data.choices?.[0] || {};
+        const m = choice.message || {};
+        output.content = m.content ?? '';
+        output.tools = m.tool_calls || [];
+        output.meta = `id ${data.id} · model ${data.model} · finish_reason ${choice.finish_reason ?? ''}`;
+        const u = data.usage || {};
+        const comp = u.completion_tokens || 0;
+        const spd = comp > 0 ? (comp / parseFloat(ms)).toFixed(1) + ' tok/s' : '-';
+        showStats(ms + 's', u.prompt_tokens ?? '-', comp || '-', u.total_tokens ?? '-', spd);
+      } else {
+        let text = '';
+        const calls: ToolCallItem[] = [];
+        (data.output || []).forEach((item: any) => {
+          if (item.type === 'message' && item.content?.length) text = item.content[0].text || '';
+          else if (item.type === 'function_call') calls.push(item);
+        });
+        output.content = text;
+        output.tools = calls;
+        output.meta = `id ${data.id} · model ${data.model} · status ${data.status || 'completed'}`;
+        const u = data.usage || {};
+        const comp = u.output_tokens || 0;
+        const spd = comp > 0 ? (comp / parseFloat(ms)).toFixed(1) + ' tok/s' : '-';
+        showStats(ms + 's', u.input_tokens ?? '-', comp || '-', u.total_tokens ?? '-', spd);
+      }
+    } else {
+      output.content = '';
+      const reader = resp.body!.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      let content = '';
+      let usage: any = null;
+      let finishReason: string | null = null;
+      let metaId: string | null = null;
+      let metaModel: string | null = null;
+      const accTool: Record<string, { name: string; args: string }> = {};
+
+      const onSSE = (ev: string, d: any) => {
+        // chat.completion.chunk
+        if (d.choices && d.choices.length > 0) {
+          const choice = d.choices[0];
+          const delta = choice.delta || {};
+          if (delta.content) {
+            content += delta.content;
+            output.content = content;
+          }
+          if (delta.tool_calls) {
+            delta.tool_calls.forEach((tc: any) => {
+              const idx = tc.index || 0;
+              if (!accTool[idx]) accTool[idx] = { name: '', args: '' };
+              if (tc.function) {
+                if (tc.function.name) accTool[idx].name += tc.function.name;
+                if (tc.function.arguments) accTool[idx].args += tc.function.arguments;
+              }
+            });
+          }
+          if (choice.finish_reason) finishReason = choice.finish_reason;
+          if (d.usage) usage = d.usage;
+          if (d.id) metaId = d.id;
+        }
+        // responses 事件流
+        if (d.type === 'response.output_text.delta') {
+          content += d.delta || '';
+          output.content = content;
+        }
+        if (d.type === 'response.function_call_arguments.done') {
+          const key = 'r' + d.item_id;
+          accTool[key] = accTool[key] || { name: '', args: '' };
+          accTool[key].args = d.arguments || '';
+        }
+        if (d.type === 'response.output_item.added' && d.item && d.item.type === 'function_call') {
+          const key = 'r' + d.item.id;
+          accTool[key] = accTool[key] || { name: d.item.name || '', args: '' };
+        }
+        if (d.type === 'response.output_item.done' && d.item && d.item.type === 'function_call') {
+          accTool['r' + d.item.id] = { name: d.item.name || '', args: d.item.arguments || '' };
+        }
+        if (d.type === 'response.completed') {
+          usage = d.response && d.response.usage;
+          metaId = d.response && d.response.id;
+          metaModel = d.response && d.response.model;
+          finishReason = finishReason || 'completed';
+        }
+        if (d.type === 'response.created' && d.response) {
+          metaId = d.response.id;
+          metaModel = d.response.model;
+        }
+        void ev;
+      };
+
+      let ev = '';
+      const push = (line: string) => {
+        if (line.startsWith('event: ')) {
+          ev = line.slice(7).trim();
+          return;
+        }
+        if (line.startsWith('data: ')) {
+          const d = line.slice(6).trim();
+          if (d === '[DONE]') return;
+          try {
+            onSSE(ev, JSON.parse(d));
+          } catch {
+            /* 忽略无法解析的行 */
+          }
+          ev = '';
+        }
+      };
+
+      while (true) {
+        const r = await reader.read();
+        if (r.done) break;
+        buf += decoder.decode(r.value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop()!;
+        lines.forEach(push);
+      }
+      if (buf.trim() !== '') push(buf);
+
+      const calls: ToolCallItem[] = Object.values(accTool)
+        .filter((v) => v.name)
+        .map((v) => ({ function: { name: v.name, arguments: v.args } }));
+      output.tools = calls;
+
+      const ms = ((performance.now() - t0) / 1000).toFixed(2);
+      const kind = (metaId ?? '').startsWith('resp_') ? 'responses' : 'chat';
+      let promptN: any, compN: any, totalN: any;
+      if (usage) {
+        if (kind === 'responses') {
+          promptN = usage.input_tokens;
+          compN = usage.output_tokens;
+        } else {
+          promptN = usage.prompt_tokens;
+          compN = usage.completion_tokens;
+        }
+        totalN = usage.total_tokens;
+      }
+      if (content || calls.length) {
+        output.meta = `id ${metaId || '-'} · model ${metaModel || model.value} · finish_reason ${finishReason || 'stop'}`;
+        const compVal = compN || 0;
+        const spd = compVal > 0 ? (compVal / parseFloat(ms)).toFixed(1) + ' tok/s' : '-';
+        showStats(ms + 's', promptN ?? '-', compVal || '-', totalN ?? '-', spd);
+      } else {
+        output.content = '(空响应，请稍后重试)';
+        stats.err = true;
+        showStats(ms + 's', '-', '-', '-', '-');
+      }
+    }
+  } catch (e: any) {
+    output.content = '请求失败: ' + (e?.message ?? e);
+    const ms = ((performance.now() - t0) / 1000).toFixed(2);
+    stats.err = true;
+    showStats(ms + 's', '-', '-', '-', '-');
+  }
+  sending.value = false;
+}
+
+onMounted(async () => {
+  persistLocal();
+  try {
+    const r = await fetch('/v1/models');
+    const d = await r.json();
+    if (Array.isArray(d.data) && d.data.length) {
+      modelChips.value = d.data.map((m: any) => m.id);
+    }
+  } catch {
+    /* 模型列表拉取失败时保留默认值 */
+  }
+});
+</script>
+
+<template>
+  <div class="container">
+    <header class="header">
+      <h1>DeepSeek V4</h1>
+      <span class="badge">v4.0</span>
+    </header>
+    <p class="subtitle">DeepSeek V4 OpenAI 兼容 API · deepseek-v4-flash / deepseek-v4-pro · 支持 Function Calling 与 Responses API</p>
+    <p class="hint">客户端要求填写 API Key 时，使用下方自动生成的 Key 即可（sk-…，任意字符串均可）</p>
+
+    <section class="card">
+      <div class="card-title">接口端点</div>
+      <div class="endpoint"><span><span class="method">POST</span>/v1/chat/completions</span><span class="tag">聊天补全</span></div>
+      <div class="endpoint"><span><span class="method">POST</span>/v1/responses</span><span class="tag">Responses API</span></div>
+      <div class="endpoint"><span><span class="method">GET</span>/v1/models</span><span class="tag">模型列表</span></div>
+      <div class="base-url">
+        <span>Base URL: {{ baseUrl }}</span>
+        <button class="btn-sm" @click="copyText(baseUrl, $event.currentTarget)">复制</button>
+      </div>
+      <div class="base-url">
+        <span>API Key: {{ apiKey }}</span>
+        <span style="display: flex; gap: .4rem">
+          <button class="btn-sm" @click="copyText(apiKey, $event.currentTarget)">复制</button>
+          <button class="btn-sm" @click="regenerateKey">重新生成</button>
+        </span>
+      </div>
+      <div class="chips">
+        <span v-for="m in modelChips" :key="m" class="chip">{{ m }}</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="tab-bar">
+        <div
+          v-for="t in tabs"
+          :key="t.id"
+          class="tab"
+          :class="{ active: activeTab === t.id }"
+          @click="activeTab = t.id"
+        >{{ t.label }}</div>
+      </div>
+
+      <div v-show="activeTab === 'test'">
+        <div class="row">
+          <div>
+            <label>接口</label>
+            <select v-model="ep">
+              <option value="chat">/v1/chat/completions</option>
+              <option value="responses">/v1/responses</option>
+            </select>
+          </div>
+          <div>
+            <label>模型</label>
+            <select v-model="model">
+              <option v-for="m in ALL_MODELS" :key="m" :value="m">{{ m }}</option>
+            </select>
+          </div>
+          <div>
+            <label>Top K</label>
+            <input v-model.number="topk" type="number" min="1" max="50" />
+          </div>
+        </div>
+        <div style="margin-bottom: .65rem">
+          <label>系统提示词（Responses API 时作为 instructions）</label>
+          <textarea v-model="system" rows="2" placeholder="可选"></textarea>
+        </div>
+        <div style="margin-bottom: .65rem">
+          <label>消息内容</label>
+          <textarea v-model="msg" rows="3" placeholder="输入消息..."></textarea>
+        </div>
+        <div style="margin-bottom: .65rem">
+          <label>工具定义（Tools JSON，可选，留空则不启用 Function Calling）</label>
+          <textarea
+            v-model="toolsRaw"
+            class="mono"
+            rows="4"
+            placeholder='[{"type":"function","function":{"name":"get_weather","description":"查询指定城市的天气","parameters":{"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}}}]'
+          ></textarea>
+        </div>
+        <div class="row">
+          <div>
+            <label>tool_choice</label>
+            <select v-model="toolChoice">
+              <option value="auto">auto</option>
+              <option value="none">none</option>
+              <option value="required">required</option>
+            </select>
+          </div>
+          <div style="display: flex; align-items: flex-end">
+            <div class="check-row">
+              <input v-model="stream" id="stream" type="checkbox" />
+              <label for="stream">流式输出</label>
+            </div>
+          </div>
+        </div>
+        <button class="btn-primary" :disabled="sending" @click="send">发送请求</button>
+        <span class="muted" style="margin-left: .6rem">工具调用会以卡片形式展示在响应区</span>
+      </div>
+
+      <div v-show="activeTab === 'curl'">
+        <template v-for="s in curlSamples" :key="s.title">
+          <div class="code-title">{{ s.title }}</div>
+          <CodeBlock :code="s.code" />
+        </template>
+      </div>
+
+      <div v-show="activeTab === 'python'">
+        <template v-for="s in pythonSamples" :key="s.title">
+          <div class="code-title">{{ s.title }}</div>
+          <CodeBlock :code="s.code" />
+        </template>
+      </div>
+
+      <div v-show="activeTab === 'node'">
+        <template v-for="s in nodeSamples" :key="s.title">
+          <div class="code-title">{{ s.title }}</div>
+          <CodeBlock :code="s.code" />
+        </template>
+      </div>
+
+      <div v-show="activeTab === 'sdk'">
+        <template v-for="s in sdkSamples" :key="s.title">
+          <div class="code-title">{{ s.title }}</div>
+          <CodeBlock :code="s.code" />
+        </template>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-title">响应结果</div>
+      <div class="output">
+        <div class="resp-meta" v-if="output.meta">{{ output.meta }}</div>
+        <div class="resp-content">{{ output.content }}</div>
+        <div class="resp-tools">
+          <ToolCard v-for="(c, i) in output.tools" :key="i" :call="c" />
+        </div>
+      </div>
+      <div class="stats-bar" v-show="stats.visible">
+        <div class="stat">耗时 <span class="val" :class="{ err: stats.err }">{{ stats.time }}</span></div>
+        <div class="stat">Prompt <span class="val" :class="{ err: stats.err }">{{ stats.prompt }}</span></div>
+        <div class="stat">Completion <span class="val" :class="{ err: stats.err }">{{ stats.comp }}</span></div>
+        <div class="stat">Total <span class="val" :class="{ err: stats.err }">{{ stats.total }}</span></div>
+        <div class="stat">速度 <span class="val" :class="{ err: stats.err }">{{ stats.speed }}</span></div>
+      </div>
+    </section>
+  </div>
+</template>

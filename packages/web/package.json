@@ -1,0 +1,22 @@
+{
+  "name": "cj2deepseek-web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "cj2deepseek 内置测试页面（Vue 3 + TypeScript），构建为单文件 HTML 后由 scripts/inline-page.mjs 内嵌进 src/page.ts",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7",
+    "vite-plugin-singlefile": "^2.1.0",
+    "vue-tsc": "^2.2.0"
+  }
+}
