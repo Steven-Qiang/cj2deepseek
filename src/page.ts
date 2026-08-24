@@ -6,8 +6,8 @@ export function renderDemoPage(): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CJ2API</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%234a9eff'/%3E%3Cstop offset='100%25' stop-color='%234ade80'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='6' fill='%230a0a0a'/%3E%3Crect x='1.5' y='1.5' width='29' height='29' rx='5' fill='none' stroke='url(%23g)' stroke-width='1.5'/%3E%3Ctext x='16' y='21.5' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='14' fill='url(%23g)'%3ECJ%3C/text%3E%3C/svg%3E">
+  <title>DeepSeek V4 API</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%234a9eff'/%3E%3Cstop offset='100%25' stop-color='%234ade80'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='6' fill='%230a0a0a'/%3E%3Crect x='1.5' y='1.5' width='29' height='29' rx='5' fill='none' stroke='url(%23g)' stroke-width='1.5'/%3E%3Ctext x='16' y='21.5' text-anchor='middle' font-family='system-ui,sans-serif' font-weight='700' font-size='14' fill='url(%23g)'%3EDS%3C/text%3E%3C/svg%3E">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0a0a0a;color:#e0e0e0;min-height:100vh;display:flex;justify-content:center;padding:2rem 1rem}
@@ -57,11 +57,11 @@ export function renderDemoPage(): string {
 <body>
   <div class="container">
     <div class="header">
-      <h1>CJ2API</h1>
-      <span class="badge">v1.0</span>
+      <h1>DeepSeek V4</h1>
+      <span class="badge">v4.0</span>
     </div>
-    <p class="subtitle">OpenAI 兼容 API · 基于 <a href="https://chatjimmy.ai" target="_blank">ChatJimmy</a></p>
-    <p class="hint">无需 API Key — 如客户端要求填写密钥，随意输入任意字符串即可</p>
+    <p class="subtitle">DeepSeek V4 OpenAI 兼容 API · deepseek-v4-flash / deepseek-v4-pro</p>
+    <p class="hint">客户端要求填写 API Key 时，填入任意字符串即可调用</p>
 
     <div class="card">
       <div class="card-title">接口端点</div>
@@ -79,7 +79,10 @@ export function renderDemoPage(): string {
 
       <div id="tab-test" class="tab-content active">
         <div class="row">
-          <div><label>模型</label><input type="text" id="model" value="${DEFAULT_MODEL}" placeholder="模型名称"></div>
+          <div><label>模型</label><select id="model">
+            <option value="deepseek-v4-flash" selected>deepseek-v4-flash</option>
+            <option value="deepseek-v4-pro">deepseek-v4-pro</option>
+          </select></div>
           <div><label>Top K</label><input type="number" id="topk" value="8" min="1" max="50"></div>
         </div>
         <div style="margin-bottom:.65rem"><label>系统提示词</label><textarea id="system" rows="2" placeholder="可选"></textarea></div>
@@ -252,7 +255,7 @@ console.log(data.choices[0].message.content);</div>
     (function(){
       var origin=window.location.origin;
       document.querySelectorAll('.code-block').forEach(function(el){
-        el.innerHTML=el.innerHTML.replace(/https:\/\/your-domain/g,origin);
+        el.innerHTML=el.innerHTML.replace(/https:\\/\\/your-domain/g,origin);
       });
     })();
   </script>

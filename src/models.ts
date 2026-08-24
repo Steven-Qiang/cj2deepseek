@@ -1,17 +1,15 @@
-import { DEFAULT_MODEL, CORS_HEADERS } from './utils';
+import { AVAILABLE_MODELS, CORS_HEADERS } from './utils';
 
 export function handleModels(): Response {
   const data = {
     object: 'list',
-    data: [
-      {
-        id: DEFAULT_MODEL,
-        object: 'model',
-        created: 1740000000,
-        owned_by: 'system',
-        permission: [],
-      },
-    ],
+    data: AVAILABLE_MODELS.map((id) => ({
+      id,
+      object: 'model',
+      created: 1740000000,
+      owned_by: 'system',
+      permission: [],
+    })),
   };
 
   return new Response(JSON.stringify(data), {

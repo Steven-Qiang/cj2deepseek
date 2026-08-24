@@ -68,7 +68,7 @@ npm run deploy:edgeone
 
 ```json
 {
-  "model": "llama3.1-8B",
+  "model": "deepseek-v4-flash",
   "messages": [
     { "role": "system", "content": "你是一个有帮助的助手" },
     { "role": "user", "content": "你好" }
@@ -80,10 +80,12 @@ npm run deploy:edgeone
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `model` | string | 否 | 模型名称，默认 `llama3.1-8B` |
-| `messages` | array | 是 | 消息列表，支持 `system` / `user` / `assistant` 角色 |
+| `model` | string | 否 | 模型名称，默认 `deepseek-v4-flash` |
+| `messages` | array | 是 | 消息列表，支持 `system` / `user` / `assistant` / `tool` 角色 |
 | `stream` | boolean | 否 | 是否启用流式输出，默认 `false` |
 | `top_k` | number | 否 | Top-K 采样参数，默认 `8` |
+| `tools` | array | 否 | 函数工具定义（Function Calling），自动转换为模型可理解的调用格式 |
+| `tool_choice` | string/object | 否 | `auto` / `none` / `required` / `{"type":"function","function":{"name":"..."}}` |
 
 **非流式响应：**
 
@@ -92,7 +94,7 @@ npm run deploy:edgeone
   "id": "chatcmpl-xxxx",
   "object": "chat.completion",
   "created": 1740000000,
-  "model": "llama3.1-8B",
+  "model": "deepseek-v4-flash",
   "choices": [
     {
       "index": 0,
@@ -113,11 +115,11 @@ npm run deploy:edgeone
 当 `stream: true` 时，返回 `text/event-stream` 格式：
 
 ```
-data: {"id":"chatcmpl-xxxx","object":"chat.completion.chunk","created":1740000000,"model":"llama3.1-8B","choices":[{"index":0,"delta":{"role":"assistant","content":"你好"},"finish_reason":null}]}
+data: {"id":"chatcmpl-xxxx","object":"chat.completion.chunk","created":1740000000,"model":"deepseek-v4-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"你好"},"finish_reason":null}]}
 
-data: {"id":"chatcmpl-xxxx","object":"chat.completion.chunk","created":1740000000,"model":"llama3.1-8B","choices":[{"index":0,"delta":{"content":"！"},"finish_reason":null}]}
+data: {"id":"chatcmpl-xxxx","object":"chat.completion.chunk","created":1740000000,"model":"deepseek-v4-flash","choices":[{"index":0,"delta":{"content":"！"},"finish_reason":null}]}
 
-data: {"id":"chatcmpl-xxxx","object":"chat.completion.chunk","created":1740000000,"model":"llama3.1-8B","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":12,"completion_tokens":85,"total_tokens":97}}
+data: {"id":"chatcmpl-xxxx","object":"chat.completion.chunk","created":1740000000,"model":"deepseek-v4-flash","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":12,"completion_tokens":85,"total_tokens":97}}
 
 data: [DONE]
 ```
@@ -130,10 +132,45 @@ data: [DONE]
 {
   "object": "list",
   "data": [
-    { "id": "llama3.1-8B", "object": "model", "owned_by": "system" }
+    { "id": "deepseek-v4-flash", "object": "model", "owned_by": "system" },
+    { "id": "deepseek-v4-pro", "object": "model", "owned_by": "system" }
   ]
 }
 ```
+
+### POST `/v1/responses`
+
+OpenAI Responses API 兼容接口（agent / 工具调用场景），支持流式和非流式。
+
+**请求体：**
+
+```json
+{
+  "model": "deepseek-v4-flash",
+  "input": "北京今天天气怎么样？",
+  "tools": [
+    {
+      "type": "function",
+      "name": "get_weather",
+      "description": "查询指定城市的天气",
+      "parameters": {
+        "type": "object",
+        "properties": { "city": { "type": "string" } },
+        "required": ["city"]
+      }
+    }
+  ],
+  "stream": false
+}
+```
+
+- `input` 支持字符串或数组（`message` / `function_call` / `function_call_output` 项，可组合成多轮 agent 对话）
+- 模型输出中的函数调用会以 `function_call` 项返回，供 agent 继续执行工具循环
+- 流式响应遵循 Responses API 事件序列：`response.created` → `response.output_item.added` → `response.output_text.delta` … → `response.completed`
+
+**Function Calling 说明：**
+
+`/v1/chat/completions` 与 `/v1/responses` 均支持工具调用。历史消息中的 `assistant.tool_calls` 与 `role: "tool"` 结果会自动转换为模型可理解的调用/结果格式，模型以标准 OpenAI `tool_calls`（chat）或 `function_call`（responses）返回，可直接驱动 agent 工具循环（如 OpenCode / OpenAI Agents SDK 等客户端）。
 
 ## 使用示例
 
@@ -143,7 +180,7 @@ data: [DONE]
 curl -X POST https://your-domain/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-  "model": "llama3.1-8B",
+  "model": "deepseek-v4-flash",
   "messages": [{"role": "user", "content": "你好"}],
   "stream": false
 }'
@@ -157,7 +194,7 @@ import requests
 resp = requests.post(
     "https://your-domain/v1/chat/completions",
     json={
-        "model": "llama3.1-8B",
+        "model": "deepseek-v4-flash",
         "messages": [{"role": "user", "content": "你好"}],
         "stream": False
     }
@@ -172,7 +209,7 @@ const resp = await fetch("https://your-domain/v1/chat/completions", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    model: "llama3.1-8B",
+    model: "deepseek-v4-flash",
     messages: [{ role: "user", content: "你好" }],
     stream: false
   })
@@ -194,7 +231,7 @@ client = OpenAI(
 )
 
 response = client.chat.completions.create(
-    model="llama3.1-8B",
+    model="deepseek-v4-flash",
     messages=[{"role": "user", "content": "你好"}]
 )
 print(response.choices[0].message.content)
