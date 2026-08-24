@@ -61,7 +61,12 @@ function safeGet(key: string): string | null {
 }
 
 const baseUrl = ref(safeGet(LS_BASE_URL) || `${origin}/v1`);
-const apiKey = ref(safeGet(LS_API_KEY) || generateFakeKey());
+const apiKey = ref(validStoredKey(safeGet(LS_API_KEY)) || generateFakeKey());
+
+// 只认 sk-<32位hex> 格式；旧格式（如 48 位随机串）视为无效，重新生成
+function validStoredKey(k: string | null): string | null {
+  return k && /^sk-[0-9a-f]{32}$/.test(k) ? k : null;
+}
 
 // DeepSeek 风格假 Key：sk- + 32 位 MD5 十六进制
 function generateFakeKey(): string {
