@@ -15,7 +15,7 @@ metadata:
 
 1. 检查是否已安装依赖（根目录 node_modules 是否存在），未安装则执行 `pnpm install`（pnpm store 如有沙箱问题可加 `--store-dir .pnpm-store`）
 2. 执行 `pnpm run deploy`
-   - 等价于 `pnpm run build:page && pnpm -F worker deploy`
+   - 等价于 `pnpm run build:page && pnpm -F cj2deepseek-worker deploy`
    - `build:page` 会先构建 packages/web（Vite 单文件）并内嵌进 `packages/worker/src/page.ts`
 3. 输出部署结果：Worker URL、部署状态
 

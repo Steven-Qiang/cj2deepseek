@@ -28,12 +28,12 @@
     "pnpm"
   ],
   "scripts": {
-    "build:page": "pnpm --filter ./packages/web build && node scripts/inline-page.mjs",
-    "dev:page": "pnpm --filter ./packages/web dev",
-    "dev": "pnpm run build:page && pnpm --filter ./packages/worker dev",
-    "deploy": "pnpm run build:page && pnpm --filter ./packages/worker deploy",
-    "deploy:edgeone": "pnpm run build:page && pnpm --filter ./packages/worker deploy:edgeone",
-    "tail": "pnpm --filter ./packages/worker tail",
+    "build:page": "pnpm -F cj2deepseek-web build && node scripts/inline-page.mjs",
+    "dev:page": "pnpm -F cj2deepseek-web dev",
+    "dev": "pnpm run build:page && pnpm -F cj2deepseek-worker dev",
+    "deploy": "pnpm run build:page && pnpm -F cj2deepseek-worker deploy",
+    "deploy:edgeone": "pnpm run build:page && pnpm -F cj2deepseek-worker deploy:edgeone",
+    "tail": "pnpm -F cj2deepseek-worker tail",
     "typecheck": "pnpm run build:page && pnpm -r typecheck"
   },
   "packageManager": "pnpm@11.7.0"
