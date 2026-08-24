@@ -1,16 +1,18 @@
-# CJ2API
+# CJ2DeepSeek 🎭
 
-将 [ChatJimmy](https://chatjimmy.ai) 转换为 OpenAI 兼容 API 的工具，支持 Cloudflare Workers 和腾讯云 EdgeOne Pages。
+> 恶搞项目：把 [ChatJimmy](https://chatjimmy.ai) 的底层模型（llama3.1-8B）**伪装成 DeepSeek V4 API**。
+> 客户端以为自己连的是 `deepseek-v4-flash`，实际上背后跑的是廉价小模型——拿去逗朋友刚刚好。
 
-一键部署到 Cloudflare 或 EdgeOne，即可获得标准的 `/v1/chat/completions` 接口，兼容所有支持 OpenAI API 的客户端和框架。无需 API Key。
+本项目是 [qingchencloud/cj2api](https://github.com/qingchencloud/cj2api) 的 fork，在原来「ChatJimmy → OpenAI 兼容代理」的基础上改造成了一个独立的恶搞项目：
 
-## 特性
+- 🎭 **DeepSeek 伪装** — 对外模型名是 `deepseek-v4-flash` / `deepseek-v4-pro`，绝不上传真实模型名
+- 🛠 **Function Calling** — 支持 `tools` / `tool_choice`，历史 `tool_calls` / `tool` 消息自动转换，可直接驱动 agent 工具循环
+- 🧩 **Responses API** — 新增 OpenAI Responses 兼容接口（`/v1/responses`），支持流式事件序列
+- ⚡ **多平台部署** — 同时支持 Cloudflare Workers 和腾讯云 EdgeOne Pages
+- 🖥 **自带测试页** — 访问根路径即可在线测试，支持工具调用可视化、流式输出、实时 Token 统计
+- 📊 **Token 统计** — 响应中包含 `usage` 字段
 
-- **OpenAI 兼容** — 标准 Chat Completions API 格式，支持流式 (SSE) 和非流式响应
-- **多平台部署** — 同时支持 Cloudflare Workers 和腾讯云 EdgeOne Pages
-- **自带测试页** — 访问根路径即可在线测试，附带 cURL / Python / Node.js 示例
-- **Token 统计** — 响应中包含 `usage` 字段，测试页实时显示输出速度
-- **极简代码** — 纯 TypeScript，无任何第三方运行时依赖
+> ⚠️ **免责声明**：本项目仅供学习研究与朋友间娱乐，请勿用于商业用途或生产环境。
 
 ## 快速开始
 
@@ -22,29 +24,20 @@
 ### 方式一：部署到 Cloudflare Workers (从 GitHub 克隆)
 
 ```bash
-git clone https://github.com/qingchencloud/cj2api.git
+git clone https://github.com/Steven-Qiang/cj2api.git
 cd cj2api
 npm install
 npx wrangler login    # 首次使用需登录 Cloudflare
 npm run deploy
 ```
 
-部署完成后，Wrangler 会输出你的 Worker URL，形如 `https://cj2api.<你的子域>.workers.dev`。
+部署完成后，Wrangler 会输出你的 Worker URL，形如 `https://cj2deepseek.<你的子域>.workers.dev`。
 
-### 方式二：从 npm 安装 (Cloudflare)
-
-```bash
-npm install @qingchencloud/cj2api
-cd node_modules/@qingchencloud/cj2api
-npx wrangler login    # 首次使用需登录 Cloudflare
-npm run deploy
-```
-
-### 方式三：部署到腾讯云 EdgeOne Pages (推荐国内直连)
+### 方式二：部署到腾讯云 EdgeOne Pages (推荐国内直连)
 
 EdgeOne Pages 提供了更佳的国内访问体验，支持一键部署：
 
-[![使用 EdgeOne Pages 部署](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://console.cloud.tencent.com/edgeone/pages/new?repository-url=https%3A%2F%2Fgithub.com%2Fqingchencloud%2Fcj2api)
+[![使用 EdgeOne Pages 部署](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://console.cloud.tencent.com/edgeone/pages/new?repository-url=https%3A%2F%2Fgithub.com%2FSteven-Qiang%2Fcj2api)
 
 或者手动部署：
 ```bash
@@ -53,10 +46,37 @@ npm run deploy:edgeone
 ```
 
 > **国内访问提示：**
-> - **Cloudflare**: `*.workers.dev` 域名在国内访问可能不稳定，建议绑定自定义域名走 CDN，或通过 Dashboard → Workers → cj2api → Settings → Domains & Routes 绑定域名。
+> - **Cloudflare**: `*.workers.dev` 域名在国内访问可能不稳定，建议绑定自定义域名走 CDN，或通过 Dashboard → Workers → cj2deepseek → Settings → Domains & Routes 绑定域名。
 > - **EdgeOne**: 默认提供国内边缘节点加速，延迟极低，无需额外配置即可直连。
 
 > **提示：** 如客户端要求填写 API Key，随意输入任意字符串即可。
+
+## 恶搞原理（工作原理）
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  受害者视角                                            │
+│  OpenAI SDK / curl → POST /v1/chat/completions          │
+│  model: "deepseek-v4-flash"                             │
+│  ↑ 标准 OpenAI 请求格式，完全看不出破绽                   │
+└────────────────────────┬────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────┐
+│  Worker / Edge Function（cj2deepseek）                   │
+│  1. 解析请求体（messages / tools / tool_choice）          │
+│  2. 工具定义 → llama 友好的 <tool_call> 提示词             │
+│  3. 翻译消息 → ChatJimmy 私有协议                          │
+│  4. 固定调用 UPSTREAM_MODEL（绝不使用客户端模型名）          │
+│  5. 解析 <tool_call> 块 + stats → 封装为 OpenAI 格式       │
+└────────────────────────┬────────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────────┐
+│  chatjimmy.ai/api/chat                                   │
+│  llama3.1-8B（真正的"垃圾模型"，DeepSeek 只是外皮）        │
+└─────────────────────────────────────────────────────────┘
+```
+
+关键点：**客户端请求什么模型都无所谓**，上游固定使用 `llama3.1-8B`（见 `src/utils.ts` 的 `UPSTREAM_MODEL`），模型名只是对外展示的假名。工具调用则通过 `<tool_call>` / `<tool_result>` 文本块与底层模型交互，再转换回标准 OpenAI `tool_calls` 格式。
 
 ## API 接口
 
@@ -126,7 +146,7 @@ data: [DONE]
 
 ### GET `/v1/models`
 
-返回可用模型列表。
+返回可用模型列表（假名）。
 
 ```json
 {
@@ -174,14 +194,28 @@ OpenAI Responses API 兼容接口（agent / 工具调用场景），支持流式
 
 ## 使用示例
 
-### cURL
+### cURL（含工具调用）
 
 ```bash
 curl -X POST https://your-domain/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
   "model": "deepseek-v4-flash",
-  "messages": [{"role": "user", "content": "你好"}],
+  "messages": [{"role": "user", "content": "北京今天天气怎么样？"}],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "查询指定城市的天气",
+        "parameters": {
+          "type": "object",
+          "properties": { "city": { "type": "string" } },
+          "required": ["city"]
+        }
+      }
+    }
+  ],
   "stream": false
 }'
 ```
@@ -218,9 +252,9 @@ const data = await resp.json();
 console.log(data.choices[0].message.content);
 ```
 
-### OpenAI SDK（Python）
+### OpenAI SDK（Python，含工具循环）
 
-完全兼容 OpenAI API 格式，可以直接使用官方 SDK：
+完全兼容 OpenAI API 格式，可以直接使用官方 SDK，连 Function Calling 都能正常驱动：
 
 ```python
 from openai import OpenAI
@@ -230,57 +264,69 @@ client = OpenAI(
     api_key="any-string"  # 无需真实 API Key
 )
 
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "查询指定城市的天气",
+            "parameters": {
+                "type": "object",
+                "properties": {"city": {"type": "string"}},
+                "required": ["city"],
+            },
+        },
+    }
+]
+
 response = client.chat.completions.create(
     model="deepseek-v4-flash",
-    messages=[{"role": "user", "content": "你好"}]
+    messages=[{"role": "user", "content": "北京今天天气怎么样？"}],
+    tools=tools,
 )
-print(response.choices[0].message.content)
+
+# 工具调用结果
+msg = response.choices[0].message
+if msg.tool_calls:
+    for call in msg.tool_calls:
+        print(call.function.name, call.function.arguments)
+
+# 把工具结果喂回去，继续对话
+response2 = client.chat.completions.create(
+    model="deepseek-v4-flash",
+    messages=[
+        {"role": "user", "content": "北京今天天气怎么样？"},
+        msg,
+        {"role": "tool", "tool_call_id": msg.tool_calls[0].id, "content": "晴，25°C"},
+    ],
+    tools=tools,
+)
+print(response2.choices[0].message.content)
 ```
 
 ## 本地开发
 
 ```bash
-git clone https://github.com/qingchencloud/cj2api.git
+git clone https://github.com/Steven-Qiang/cj2api.git
 cd cj2api
 npm install
 npm run dev
 # 默认监听 http://localhost:8787
 ```
 
-## 工作原理
-
-```
-客户端 (OpenAI SDK / curl / 任意 HTTP)
-  │
-  │  POST /v1/chat/completions
-  │  标准 OpenAI 请求格式
-  ▼
-┌─────────────────────────┐
-│   Worker / Edge Function │
-│                         │
-│  1. 解析请求体           │
-│  2. 提取 system 消息     │
-│  3. 转换为上游格式       │
-│  4. 转发到 ChatJimmy     │
-│  5. 解析响应 + stats     │
-│  6. 封装为 OpenAI 格式   │
-└─────────────────────────┘
-  │
-  │  ChatJimmy 私有协议
-  ▼
-┌─────────────────────────┐
-│   chatjimmy.ai/api/chat │
-│   返回纯文本 + stats 块  │
-└─────────────────────────┘
-```
-
 ## 项目结构
 
 ```
-cj2api/
+cj2deepseek/
 ├── src/                # 核心业务逻辑 (跨平台共享)
+│   ├── index.ts        # Cloudflare Workers 入口
+│   ├── chat.ts         # Chat Completions 处理 + 上游执行/重试
+│   ├── responses.ts    # Responses API 处理
+│   ├── tools.ts        # 工具翻译：<tool_call> 提示词 / 解析 / 消息转换
+│   ├── upstream.ts     # ChatJimmy 上游调用
+│   ├── page.ts         # 内置测试页面
+│   └── utils.ts        # 模型假名 / ID / usage / CORS
 ├── functions/          # EdgeOne Pages Functions 入口
-├── index.ts            # Cloudflare Workers 入口
 ├── wrangler.toml       # Cloudflare Workers 配置
 ├── edgeone.json        # EdgeOne Pages 配置
 ├── tsconfig.json       # TypeScript 配置
@@ -300,8 +346,10 @@ cj2api/
 
 ## 免责声明
 
-本项目仅供**学习研究和技术测试**使用，请勿用于任何商业用途。作者不对因使用本项目产生的任何损失承担责任。
+- 🎭 本项目会**故意谎报模型身份**：客户端看到的模型名是 `deepseek-v4-flash` / `deepseek-v4-pro`，实际调用的是 ChatJimmy 的 `llama3.1-8B`。**请勿**将其用于任何严肃的、对模型能力有要求的场景。
+- 仅供**学习研究和技术测试**使用，请勿用于任何商业用途。
+- 作者不对因使用本项目产生的任何损失承担责任。
 
 ## License
 
-[MIT](LICENSE) © QingChen Cloud
+[MIT](LICENSE) © Steven-Qiang（fork 自 [qingchencloud/cj2api](https://github.com/qingchencloud/cj2api) © QingChen Cloud）

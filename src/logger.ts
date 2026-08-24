@@ -13,14 +13,14 @@ export function log(prefix: string, fields: Record<string, unknown>): void {
       parts.push(s.includes(' ') ? `${k}=${JSON.stringify(s)}` : `${k}=${s}`);
     }
   }
-  console.log(`[cj2api] ${prefix} ${parts.join(' ')}`);
+  console.log(`[cj2deepseek] ${prefix} ${parts.join(' ')}`);
 }
 
 export function logError(prefix: string, err: unknown, fields: Record<string, unknown> = {}): void {
   const e = err as any;
   const msg = e && e.message ? String(e.message) : String(err);
   const stack = e && e.stack ? String(e.stack).split('\n').slice(0, 6).join(' | ') : '';
-  console.error(`[cj2api] ${prefix} error=${JSON.stringify(msg)} ${Object.entries(fields)
+  console.error(`[cj2deepseek] ${prefix} error=${JSON.stringify(msg)} ${Object.entries(fields)
     .filter(([, v]) => v !== undefined && v !== null && v !== '')
     .map(([k, v]) => `${k}=${String(v)}`)
     .join(' ')}${stack ? ` stack=${JSON.stringify(stack)}` : ''}`);
