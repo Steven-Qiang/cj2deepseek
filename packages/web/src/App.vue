@@ -68,11 +68,6 @@ function generateFakeKey(): string {
   return `sk-${s}`;
 }
 
-function regenerateKey() {
-  apiKey.value = generateFakeKey();
-  persistLocal();
-}
-
 function persistLocal() {
   try {
     localStorage.setItem(LS_BASE_URL, baseUrl.value);
@@ -553,7 +548,6 @@ onMounted(async () => {
       <span class="badge">v4.0</span>
     </header>
     <p class="subtitle">DeepSeek V4 OpenAI 兼容 API · deepseek-v4-flash / deepseek-v4-pro · 支持 Function Calling 与 Responses API</p>
-    <p class="hint">客户端要求填写 API Key 时，使用下方自动生成的 Key 即可（sk-…，任意字符串均可）</p>
 
     <section class="card">
       <div class="card-title">接口端点</div>
@@ -566,10 +560,7 @@ onMounted(async () => {
       </div>
       <div class="base-url">
         <span>API Key: {{ apiKey }}</span>
-        <span style="display: flex; gap: .4rem">
-          <button class="btn-sm" @click="copyText(apiKey, $event.currentTarget)">复制</button>
-          <button class="btn-sm" @click="regenerateKey">重新生成</button>
-        </span>
+        <button class="btn-sm" @click="copyText(apiKey, $event.currentTarget)">复制</button>
       </div>
       <div class="chips">
         <span v-for="m in modelChips" :key="m" class="chip">{{ m }}</span>

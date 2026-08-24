@@ -23,7 +23,7 @@ metadata:
 
 - 头部：标题 + 版本徽章 + API Key 提示（**保持 DeepSeek V4 伪装，不出现 ChatJimmy / llama 字样**）
 - 接口端点卡片：POST /v1/chat/completions、POST /v1/responses、GET /v1/models
-- 连接信息：Base URL + API Key（**自动生成假 Key `sk-…`，localStorage 持久化，可重新生成**，均有复制按钮）
+- 连接信息：Base URL + API Key（**自动生成假 Key `sk-…`，localStorage 持久化**，均有复制按钮）
 - 五个 Tab：测试、cURL、Python、Node.js、OpenAI SDK
 - 测试面板：接口 / 模型 / Top K / 系统提示词 / 消息 / 工具定义 JSON / tool_choice / 流式
 - 响应结果区：meta + 文本内容 + 工具调用卡片 + 统计栏（耗时、Token 数、输出速度）
