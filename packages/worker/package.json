@@ -1,5 +1,5 @@
 {
-  "name": "cj2deepseek",
+  "name": "cj2deepseek-worker",
   "version": "1.1.0",
   "private": true,
   "description": "恶搞项目：把 ChatJimmy 伪装成 DeepSeek API 的 OpenAI 兼容代理（qingchencloud/cj2api 的 fork），支持 Function Calling 与 Responses API，可部署到 Cloudflare Workers 和 EdgeOne Pages。",
