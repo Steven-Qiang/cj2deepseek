@@ -1,11 +1,21 @@
 /**
  * 皮肤注册表。
  *
- * 四套皮肤都是「免费中转站」人设，区别在气质、文案与功能深度：
- *   ① RelayHub      深色科技风，全功能测试台（5 个 Tab + 工具调用可视化 + 成本表）
- *   ② nexus-relay   终端 / 控制台风，全功能终端化呈现
- *   ③ FreeRelay     日间极简风，主打「免注册 / 免付费 / 不限额度」+ 免费对比表 + 调试台
- *   ④ 麻薯 AI       彩色圆润黏土风，萌系免费中转站 + 调试台 + 小纸条 FAQ
+ * 全部是「免费中转站」人设，区别在气质、文案与功能深度：
+ *   ① RelayHub        深色科技风，全功能测试台（5 Tab + 工具调用可视化 + 成本表）
+ *   ② nexus-relay     终端 / 控制台风，全功能终端化呈现
+ *   ③ FreeRelay       日间极简，免费对比表 + 调试台
+ *   ④ 麻薯 AI          黏土圆润萌系
+ *   ⑤ NIGHTFERRY      赛博霓虹，全功能
+ *   ⑥ 云枢 API         亮色企业云控制台，全功能
+ *   ⑦ 福利中转站       火红营销派对风
+ *   ⑧ 樱 API           少女粉二次元
+ *   ⑨ PIXEL RELAY     8-bit 街机像素风
+ *   ⑩ AI 快报          报纸印刷风
+ *   ⑪ RELAY.          瑞士国际主义极简，全功能
+ *   ⑫ Aurora          玻璃拟态极光
+ *   ⑬ 墨枢             国风水墨
+ *   ⑭ AURUM           黑金奢华
  *
  * 访问者首次进来随机分配一套并写进 localStorage，之后一直固定；
  * 自己换肤的隐藏入口见 App.vue（?skin= 与连点页脚）。
@@ -15,6 +25,16 @@ import RelayDark from './RelayDark.vue';
 import NexusTerminal from './NexusTerminal.vue';
 import FreeRelay from './FreeRelay.vue';
 import MochiCute from './MochiCute.vue';
+import CyberNeon from './CyberNeon.vue';
+import CloudSaaS from './CloudSaaS.vue';
+import HotDeal from './HotDeal.vue';
+import SakuraAnime from './SakuraAnime.vue';
+import PixelArcade from './PixelArcade.vue';
+import PaperDaily from './PaperDaily.vue';
+import SwissMono from './SwissMono.vue';
+import AuroraGlass from './AuroraGlass.vue';
+import InkScroll from './InkScroll.vue';
+import NoirGold from './NoirGold.vue';
 
 export interface Skin {
   /** 稳定 id，存 localStorage 用 */
@@ -27,30 +47,20 @@ export interface Skin {
 }
 
 export const SKINS: Skin[] = [
-  {
-    id: 'relay-dark',
-    brand: 'RelayHub',
-    title: 'RelayHub · 免费开源的 AI 转发中转站',
-    component: RelayDark,
-  },
-  {
-    id: 'nexus-terminal',
-    brand: 'nexus-relay',
-    title: 'nexus-relay · 免费 AI Gateway Console',
-    component: NexusTerminal,
-  },
-  {
-    id: 'free-relay',
-    brand: 'FreeRelay',
-    title: 'FreeRelay · 免费 API 中转站',
-    component: FreeRelay,
-  },
-  {
-    id: 'mochi-cute',
-    brand: '麻薯 AI',
-    title: '麻薯 AI · 免费 API 中转站',
-    component: MochiCute,
-  },
+  { id: 'relay-dark', brand: 'RelayHub', title: 'RelayHub · 免费开源的 AI 转发中转站', component: RelayDark },
+  { id: 'nexus-terminal', brand: 'nexus-relay', title: 'nexus-relay · 免费 AI Gateway Console', component: NexusTerminal },
+  { id: 'free-relay', brand: 'FreeRelay', title: 'FreeRelay · 免费 API 中转站', component: FreeRelay },
+  { id: 'mochi-cute', brand: '麻薯 AI', title: '麻薯 AI · 免费 API 中转站', component: MochiCute },
+  { id: 'cyber-neon', brand: 'NIGHTFERRY · 夜航中转', title: '夜航中转 · 免费 API 中转站', component: CyberNeon },
+  { id: 'cloud-saas', brand: '云枢 API · CloudPivot', title: '云枢 API · 免费中转控制台', component: CloudSaaS },
+  { id: 'hot-deal', brand: '福利中转站 · FREESLOT', title: '福利中转站 · 0 元 API 不限量', component: HotDeal },
+  { id: 'sakura-anime', brand: '樱 API · SakuraRelay', title: '樱 API · 免费中转站', component: SakuraAnime },
+  { id: 'pixel-arcade', brand: 'PIXEL RELAY · 像素中转站', title: '像素中转站 · FREE API', component: PixelArcade },
+  { id: 'paper-daily', brand: 'AI 快报 · 中转版', title: 'AI 快报 · 免费 API 中转', component: PaperDaily },
+  { id: 'swiss-mono', brand: 'RELAY.', title: 'RELAY. · 免费 API 中转', component: SwissMono },
+  { id: 'aurora-glass', brand: 'Aurora · 极光中转', title: 'Aurora · 免费 API 中转站', component: AuroraGlass },
+  { id: 'ink-scroll', brand: '墨枢', title: '墨枢 · 免费 API 中转', component: InkScroll },
+  { id: 'noir-gold', brand: 'AURUM · 金枢', title: 'AURUM · 免费 API 中转', component: NoirGold },
 ];
 
 export const LS_SKIN = 'cj2deepseek:skin';

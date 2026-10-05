@@ -8,15 +8,9 @@
 
 ## 截图
 
-四套皮肤都是「免费中转站」人设，访问者首次进来随机分到一套，之后固定：
+**14 套皮肤总览**（访问者首次进来随机分到一套，之后固定；单张全尺寸截图在 `docs/skins/` 下）：
 
-| ① RelayHub · 深色科技中转站 | ② nexus-relay · 终端控制台 |
-|--------|------------|
-| ![RelayHub](docs/skins/1-relay-dark.png) | ![nexus-relay](docs/skins/2-nexus-terminal.png) |
-
-| ③ FreeRelay · 日间极简免费中转站 | ④ 麻薯 AI · 彩色圆润免费中转站 |
-|--------|------------|
-| ![FreeRelay](docs/skins/3-free-relay.png) | ![麻薯 AI](docs/skins/4-mochi-ai.png) |
+[![14 套皮肤总览](docs/skins/00-overview.png)](docs/skins/00-overview.png)
 
 > 早期单页版本的界面存档在 `docs/page-test.png` / `docs/page-agents.png`。
 
@@ -24,24 +18,34 @@
 
 ## 多套皮肤（整活核心）
 
-内置 **4 套外观、品牌名、宣传语完全不同的页面**。四套都是「免费中转站」人设，只是气质与功能深度不同。访问者第一次进来**随机**分到一套并写进 `localStorage`（键名 `cj2deepseek:skin`），之后刷新、重开都固定不变——所以每个人看到的是"不同的站"。
+内置 **14 套外观、品牌名、宣传语完全不同的页面**，全部是「免费中转站」人设，只是气质与功能深度不同。访问者第一次进来**随机**分到一套并写进 `localStorage`（键名 `cj2deepseek:skin`），之后刷新、重开都固定不变——所以每个人看到的是"不同的站"。
 
-| # | 皮肤 | 定位 | 功能范围 |
-|---|------|------|----------|
-| 1 | `RelayHub` | 深色科技风免费中转站 | 全功能：5 个 Tab（测试 / cURL / Python / Node / SDK / Agent）+ 工具调用可视化 + 成本参考表 |
-| 2 | `nexus-relay` | 终端 / 控制台风免费网关 | 同上，全部终端化呈现（节点池、状态行、`export` 接入信息） |
-| 3 | `FreeRelay` | 日间极简「免费 API 中转站」 | 接入信息 + 免费对比表 + 在线调试台 + 一行接入代码 + FAQ |
-| 4 | 麻薯 AI | 彩色圆润黏土风免费中转站 | 接入信息 + 在线试一句 + 一行接入 + 小纸条 FAQ |
+| # | 皮肤 | 风格 | 功能 |
+|---|------|------|------|
+| 01 | `RelayHub` | 深色科技中转站 | 全功能：5 Tab + 工具调用可视化 + 成本参考表 |
+| 02 | `nexus-relay` | 终端 / 控制台 | 全功能，终端化呈现（节点池、状态行、`export` 接入信息） |
+| 03 | `FreeRelay` | 日间极简 | 免费对比表 + 在线调试台 + 一行接入 + FAQ |
+| 04 | 麻薯 AI | 黏土圆润萌系 | 在线试一句 + 一行接入 + 小纸条 FAQ |
+| 05 | `NIGHTFERRY` | 赛博朋克霓虹 | 全功能：扫描线 / glitch 标题 / 节点延迟 |
+| 06 | 云枢 API | 亮色企业云控制台 | 全功能：左侧导航 + SLA + 可审计 |
+| 07 | 福利中转站 | 火红营销派对 | 跑马灯 + 倒计时 + 0 元券 + 调试台 |
+| 08 | 樱 API | 少女粉二次元 | CSS 画角色 + 樱瓣飘落 + 调试台 |
+| 09 | `PIXEL RELAY` | 8-bit 街机像素 | 扫描线 + 硬边框 + 关卡式接入 + 调试关卡 |
+| 10 | AI 快报 | 报纸印刷 | 报头 + 双栏正文 + 首字下沉 + 免费印章 |
+| 11 | `RELAY.` | 瑞士国际主义极简 | 全功能：零圆角零阴影 + 01/02/03 编号网格 |
+| 12 | `Aurora` | 玻璃拟态极光 | 毛玻璃卡片 + 极光流动 + 试用台 |
+| 13 | 墨枢 | 国风水墨 | 宣纸纹 + 朱红印章 + 试笔调试台 |
+| 14 | `AURUM` | 黑金奢华 | 极细金线描边 + 尊享试用 + 接入代码 |
 
-四套都把「免费、免注册、免密钥、不限额度」放在首屏最显眼的位置（顶部公告条 + 免费徽章 + 高亮 pill），①② 额外给了成本参考表并注明"不对调用方计费"。
+14 套都把「免费、免注册、免密钥、不限额度」放在首屏最显眼的位置（顶部公告条 / 免费徽章 / 高亮 pill），并且都提供了完整接入信息（Base URL、API Key、三个 endpoint、模型列表）——**是中转站，不是聊天网站**。
 
-皮肤源码在 `packages/web/src/skins/`，注册表在 `packages/web/src/skins/index.ts`，四套共用的请求逻辑（假 Key、模型列表、流式/非流式、工具调用）在 `packages/web/src/relay.ts`——**皮肤只负责长相**。
+皮肤源码在 `packages/web/src/skins/`，注册表在 `packages/web/src/skins/index.ts`，全部皮肤共用的请求逻辑（假 Key、模型列表、流式/非流式、工具调用）在 `packages/web/src/relay.ts`，代码示例生成在 `packages/web/src/samples.ts`——**皮肤只负责长相**。新增一套只需要写一个 `.vue` 再往注册表加一行。
 
 ### 隐藏换肤入口（给自己用，页面上无任何提示）
 
 ```bash
-https://your-domain/?skin=3            # 按序号强制指定（1-4），并固定下来
-https://your-domain/?skin=free-relay   # 按皮肤 id 指定（relay-dark / nexus-terminal / free-relay / mochi-cute）
+https://your-domain/?skin=5            # 按序号强制指定（1-14），并固定下来
+https://your-domain/?skin=ink-scroll   # 按皮肤 id 指定（见上表 # 列与代码里的 id）
 https://your-domain/?skin=random       # 重新随机一套
 ```
 
@@ -49,6 +53,7 @@ https://your-domain/?skin=random       # 重新随机一套
 
 ## 特性
 
+- **14 套随机皮肤** — 每个访客随机分到一套外观、品牌名、文案完全不同的「免费中转站」页面，并用 `localStorage` 固定下来
 - **OpenAI 兼容** — `/v1/chat/completions` 与 `/v1/responses`，支持流式（SSE）
 - **模型列表对齐官方** — `/v1/models` 写死 DeepSeek 官方模型清单与元数据（`context_window` / `max_output_tokens` / 模态 / effort 等），不联网不依赖 key
 - **Function Calling** — `tools` / `tool_choice`，历史 `tool_calls` / `tool` 消息自动转换，可驱动 Agent 工具循环
@@ -144,9 +149,9 @@ cj2deepseek/
 │   ├── worker/    # Worker / EdgeOne 函数：src(核心) + functions(入口) + wrangler.toml
 │   └── web/       # 内置测试页（Vue 3 + Vite，单文件构建）
 │       └── src/
-│           ├── relay.ts      # 四套皮肤共用的请求逻辑
+│           ├── relay.ts      # 全部皮肤共用的请求逻辑
 │           ├── samples.ts    # cURL / Python / Node / SDK / Agent 示例
-│           └── skins/        # 4 套皮肤（各自独立样式与文案）
+│           └── skins/        # 14 套皮肤（各自独立样式与文案）+ 注册表 index.ts
 ├── scripts/       # inline-page.mjs 把页面产物内嵌进 page.ts
 ├── pnpm-workspace.yaml
 └── package.json   # 根编排脚本
