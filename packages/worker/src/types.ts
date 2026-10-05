@@ -107,6 +107,15 @@ export interface UpstreamStats {
   done_reason?: string;
 }
 
+/** DeepSeek 官方 `/models` 返回的模型对象（保留可选元数据字段） */
+export interface DeepSeekModel {
+  id: string;
+  object: 'model';
+  owned_by: string;
+  /** 展示名 / 上下文窗口 / 输出上限 / 模态 / effort / 各协议能力等 */
+  [k: string]: unknown;
+}
+
 /** OpenAI Responses API 请求 */
 export interface ResponsesRequest {
   model?: string;

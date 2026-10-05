@@ -1,17 +1,23 @@
 import type { UpstreamStats } from './types';
+import { DEFAULT_MODEL_ID, MODEL_IDS } from './deepseek';
 
-/** 对外展示的默认模型名（恶搞用假名） */
-export const DEFAULT_MODEL = 'deepseek-v4-flash';
+/** 对外展示的默认模型名（客户端不传 model 时的回显值） */
+export const DEFAULT_MODEL = DEFAULT_MODEL_ID;
 
-/** 对外展示的模型列表（恶搞用假名） */
-export const AVAILABLE_MODELS = ['deepseek-v4-flash', 'deepseek-v4-pro'];
+/** 模型清单里的可用模型 id（与 /v1/models 返回一致） */
+export const AVAILABLE_MODELS: string[] = MODEL_IDS;
 
 /** 实际上游固定调用的真实模型（不对客户端暴露） */
 export const UPSTREAM_MODEL = 'llama3.1-8B';
 
-/** 把客户端请求的模型名规范化成对外展示的假名，未知请求一律归到默认假名 */
+/**
+ * 模型名原样回显：客户端传什么就回什么（gpt-4o / claude-3-5 / 乱填的都接受），
+ * 不传或传空串时回退到 DEFAULT_MODEL。
+ * 上游固定调 ChatJimmy 的 llama3.1-8B，这里的模型名纯粹用于回显，不参与路由。
+ */
 export function resolveDisplayModel(requested: string | undefined): string {
-  return requested && AVAILABLE_MODELS.includes(requested) ? requested : DEFAULT_MODEL;
+  const m = typeof requested === 'string' ? requested.trim() : '';
+  return m || DEFAULT_MODEL;
 }
 
 export function generateId(): string {

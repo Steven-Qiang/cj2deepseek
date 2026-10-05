@@ -15,8 +15,9 @@ interface OpenAIStatic {
   new (opts: { baseURL: string; apiKey: string; dangerouslyAllowBrowser: boolean }): OpenAIClient;
 }
 
-const DEFAULT_MODEL = 'deepseek-v4-flash';
-const ALL_MODELS = ['deepseek-v4-flash', 'deepseek-v4-pro'];
+const DEFAULT_MODEL = 'deepseek-flash';
+// 模型下拉与 chips 以 /v1/models 的实时返回为准，这里是接口不可用时的兜底
+const FALLBACK_MODELS = ['deepseek-flash', 'deepseek-v4-pro'];
 
 // ---------- 表单状态 ----------
 type Endpoint = 'chat' | 'responses';
@@ -56,7 +57,8 @@ const tabs = [
   { id: 'sdk', label: 'OpenAI SDK' },
   { id: 'agents', label: 'Agent 接入' },
 ];
-const modelChips = ref<string[]>(ALL_MODELS);
+const modelChips = ref<string[]>([...FALLBACK_MODELS]);
+const modelOptions = ref<string[]>([...FALLBACK_MODELS]);
 
 // 域名直接内嵌 + localStorage 持久化；API Key 只在首次访问时生成，之后稳定复用
 const LS_BASE_URL = 'cj2deepseek:baseUrl';
@@ -111,7 +113,7 @@ const curlSamples = computed(() => [
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer ${apiKey.value}" \\
   -d '{
-  "model": "${DEFAULT_MODEL}",
+  "model": "${model.value}",
   "messages": [{"role": "user", "content": "你好"}],
   "stream": false
 }'`,
@@ -122,7 +124,7 @@ const curlSamples = computed(() => [
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer ${apiKey.value}" \\
   -d '{
-  "model": "${DEFAULT_MODEL}",
+  "model": "${model.value}",
   "messages": [{"role": "user", "content": "北京今天天气怎么样？"}],
   "tools": [{
     "type": "function",
@@ -145,7 +147,7 @@ const curlSamples = computed(() => [
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer ${apiKey.value}" \\
   -d '{
-  "model": "${DEFAULT_MODEL}",
+  "model": "${model.value}",
   "input": "北京今天天气怎么样？",
   "tools": [{
     "type": "function",
@@ -171,7 +173,7 @@ resp = requests.post(
     "${baseUrl.value}/chat/completions",
     headers={"Authorization": "Bearer ${apiKey.value}"},
     json={
-        "model": "${DEFAULT_MODEL}",
+        "model": "${model.value}",
         "messages": [{"role": "user", "content": "你好"}],
         "stream": False
     }
@@ -186,7 +188,7 @@ resp = requests.post(
     "${baseUrl.value}/responses",
     headers={"Authorization": "Bearer ${apiKey.value}"},
     json={
-        "model": "${DEFAULT_MODEL}",
+        "model": "${model.value}",
         "input": "你好",
         "stream": False
     }
@@ -208,7 +210,7 @@ const nodeSamples = computed(() => [
     "Authorization": "Bearer ${apiKey.value}"
   },
   body: JSON.stringify({
-    model: "${DEFAULT_MODEL}",
+    model: "${model.value}",
     messages: [{ role: "user", content: "你好" }],
     stream: false
   })
@@ -225,7 +227,7 @@ console.log(data.choices[0].message.content);`,
     "Authorization": "Bearer ${apiKey.value}"
   },
   body: JSON.stringify({
-    model: "${DEFAULT_MODEL}",
+    model: "${model.value}",
     messages: [{ role: "user", content: "北京今天天气怎么样？" }],
     tools: [{
       type: "function",
@@ -274,7 +276,7 @@ tools = [{
 }]
 
 response = client.chat.completions.create(
-    model="${DEFAULT_MODEL}",
+    model="${model.value}",
     messages=[{"role": "user", "content": "北京今天天气怎么样？"}],
     tools=tools,
 )
@@ -286,7 +288,7 @@ if msg.tool_calls:
 
 # 把工具结果喂回去，继续对话
 response2 = client.chat.completions.create(
-    model="${DEFAULT_MODEL}",
+    model="${model.value}",
     messages=[
         {"role": "user", "content": "北京今天天气怎么样？"},
         msg,
@@ -306,7 +308,7 @@ const client = new OpenAI({
 });
 
 const resp = await client.responses.create({
-  model: "${DEFAULT_MODEL}",
+  model: "${model.value}",
   input: "你好",
 });
 
@@ -337,7 +339,7 @@ def get_weather(city: str) -> str:
 agent = Agent(
     name="助手",
     instructions="你是助手，可调用工具回答天气等问题。",
-    model="${DEFAULT_MODEL}",
+    model="${model.value}",
     tools=[get_weather],
 )
 
@@ -357,7 +359,7 @@ def get_weather(city: str) -> str:
 llm = ChatOpenAI(
     base_url="${baseUrl.value}",
     api_key="${apiKey.value}",
-    model="${DEFAULT_MODEL}",
+    model="${model.value}",
     temperature=0,
 )
 llm = llm.bind_tools([get_weather])
@@ -378,7 +380,7 @@ print(resp.content)`,
         "apiKey": "${apiKey.value}"
       },
       "models": {
-        "${DEFAULT_MODEL}": { "name": "DeepSeek V4 Flash" }
+        "${model.value}": { "name": "DeepSeek V4 Flash" }
       }
     }
   }
@@ -613,7 +615,13 @@ onMounted(async () => {
     const r = await fetch('/v1/models');
     const d = await r.json();
     if (Array.isArray(d.data) && d.data.length) {
-      modelChips.value = d.data.map((m: any) => m.id);
+      const ids = d.data
+        .map((m: any) => m?.id)
+        .filter((id: unknown): id is string => typeof id === 'string' && id.length > 0);
+      if (ids.length) {
+        modelChips.value = ids;
+        modelOptions.value = ids.includes(model.value) ? ids : [model.value, ...ids];
+      }
     }
   } catch {
     /* 模型列表拉取失败时保留默认值 */
@@ -671,7 +679,7 @@ onMounted(async () => {
           <div class="field">
             <label>模型</label>
             <select v-model="model">
-              <option v-for="m in ALL_MODELS" :key="m" :value="m">{{ m }}</option>
+              <option v-for="m in modelOptions" :key="m" :value="m">{{ m }}</option>
             </select>
           </div>
           <div class="field">

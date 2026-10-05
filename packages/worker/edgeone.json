@@ -15,6 +15,14 @@
       "destination": "/functions/v1/chat/completions"
     },
     {
+      "source": "/v1/responses",
+      "destination": "/functions/v1/responses"
+    },
+    {
+      "source": "/responses",
+      "destination": "/functions/v1/responses"
+    },
+    {
       "source": "/v1/models",
       "destination": "/functions/v1/models"
     },
