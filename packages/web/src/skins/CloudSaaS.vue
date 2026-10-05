@@ -10,6 +10,7 @@
  */
 import { computed, ref } from 'vue';
 import { useRelay } from '../relay';
+import RelayTrust from '../components/RelayTrust.vue';
 import { buildSamples } from '../samples';
 import CodeBlock from '../components/CodeBlock.vue';
 import ToolCard from '../components/ToolCard.vue';
@@ -365,6 +366,8 @@ const faqs = [
               </div>
             </div>
           </section>
+
+          <RelayTrust accent="#4f46e5" accent2="#c7d2fe" bg="#ffffff" fg="#0f172a" muted="#64748b" grid="#eef2f7" border="#e5e7eb" radius="14px" />
 
           <footer class="footer" data-skin-footer>
             <p class="fine">

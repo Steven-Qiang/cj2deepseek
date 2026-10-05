@@ -4,6 +4,7 @@
  */
 import { computed, ref } from 'vue';
 import { useRelay } from '../relay';
+import RelayTrust from '../components/RelayTrust.vue';
 import { buildSamples } from '../samples';
 import CodeBlock from '../components/CodeBlock.vue';
 import ToolCard from '../components/ToolCard.vue';
@@ -217,9 +218,11 @@ const pricing = [
         <p class="muted price-note">单位：每 1M tokens · 峰值时段（UTC 01:00-04:00 / 06:00-10:00 工作日）为表中 2 倍 · 价格以官方公示为准</p>
       </section>
 
+      <RelayTrust accent="#22d3ee" accent2="#64748b" bg="rgba(15,23,42,.72)" fg="#e2e8f0" muted="#7c8aa0" grid="rgba(148,163,184,.16)" border="rgba(148,163,184,.16)" radius="12px" />
+
       <footer class="footer" data-skin-footer>
         RelayHub · 开源项目 · 仅供学习研究与娱乐使用 · 请勿用于商业用途<br />
-        本服务为第三方转发，可能随时调整规则或关停，重要项目请使用官方 API
+        本服务为第三方转发，按《永续运营承诺》长期运营：永久免费、永久开启、永不关站
       </footer>
     </div>
   </div>

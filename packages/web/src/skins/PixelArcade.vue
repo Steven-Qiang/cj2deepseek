@@ -5,6 +5,7 @@
  */
 import { computed } from 'vue';
 import { useRelay } from '../relay';
+import RelayTrust from '../components/RelayTrust.vue';
 import { buildSamples } from '../samples';
 import CodeBlock from '../components/CodeBlock.vue';
 
@@ -35,7 +36,7 @@ const compare = [
 const faqs = [
   { q: 'Q: 真的完全免费吗？', a: '是的，完全免费且不限额度，不用投币也能一直玩。本站是公益转发，不对调用方计费，也不限制并发。' },
   { q: 'Q: 需要注册或者申请 Key？', a: '不需要。上面那串 API Key 由页面在本地生成，会自动保存在浏览器里，填任意字符串也能通过校验。' },
-  { q: 'Q: 会不会突然关站（GAME OVER）？', a: '不会主动关，但公益站点由个人维护，不承诺可用性。重要项目请使用官方 API，别把生产线放在街机上。' },
+  { q: 'Q: 会不会突然关站（GAME OVER）？', a: 'GAME OVER 不会来。已发布《永续运营承诺》：永久免费、永久开启、永不关站，真要搬家也提前 180 天公告。' },
   { q: 'Q: 我的客户端要改哪里？', a: '只改 Base URL，其余照旧。模型名按官方写法填即可，未识别的名字会被原样接受。' },
 ];
 </script>
@@ -243,7 +244,7 @@ const faqs = [
           </tbody>
         </table>
         <p class="note">
-          本站由闲置资源与公益渠道拼起来，成本不转嫁给调用方，所以不收费、不投币、也不承诺 SLA。
+          本站由闲置资源与公益渠道拼起来，成本不转嫁给调用方，所以不收费、不投币，并按《永续运营承诺》长期开着。
           <b>GAME OVER? 不会的，本站免费。</b>
         </p>
       </section>
@@ -261,6 +262,8 @@ const faqs = [
       </section>
     </main>
 
+    <RelayTrust width="960px" accent="#7cf03d" accent2="#4a4a7a" bg="#151538" fg="#d8e0ff" muted="#8a8ab8" grid="#2a2a5a" border="#3a3a6a" radius="0px" font="'Courier New', ui-monospace, monospace" />
+
     <footer class="footer" data-skin-footer>
       <div class="foot-line">
         <span>PIXEL RELAY · 像素中转站</span>
@@ -270,7 +273,7 @@ const faqs = [
       <p class="fine">
         本站为第三方公益中转，由第三方模型提供能力，与任何模型厂商无隶属关系；AI 输出可能出错，请自行核实。
       </p>
-      <p class="fine">不承诺可用性与数据安全，请勿提交隐私或敏感信息 · 仅供学习研究与娱乐使用</p>
+      <p class="fine">长期运营 · 永久免费 · 请勿提交隐私或敏感信息 · 仅供学习研究与娱乐使用</p>
     </footer>
   </div>
 </template>

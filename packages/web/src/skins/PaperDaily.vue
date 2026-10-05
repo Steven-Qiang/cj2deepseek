@@ -9,6 +9,7 @@
  */
 import { computed } from 'vue';
 import { useRelay } from '../relay';
+import RelayTrust from '../components/RelayTrust.vue';
 import { buildSamples } from '../samples';
 import CodeBlock from '../components/CodeBlock.vue';
 
@@ -39,7 +40,7 @@ const measured = [
 const letters = [
   { q: '真的不要钱吗？', a: '真的不要。本站不对调用方计费，也不需要充值，计量表里的费用永远是 ￥0.00。' },
   { q: '需要注册或申请密钥吗？', a: '都不需要。刊头那串 API Key 由页面本地生成，照抄进客户端即可；填别的字符串同样放行。' },
-  { q: '会不会哪天突然关站？', a: '会，而且不会提前登报。公益站点由个人维护，请勿用于生产环境。' },
+  { q: '会不会哪天突然关站？', a: '不会。本报已刊登《永续运营承诺》：永久免费、永久开启、永不关站；真要搬迁，提前 180 天登报公告。' },
   { q: '我的客户端要改哪里？', a: '只改 Base URL，其余照旧。模型名按官方写法填，未识别的名字会被原样接受。' },
 ];
 </script>
@@ -92,7 +93,7 @@ const letters = [
             计量表上的“费用”一栏，自始至终显示 ￥0.00。
           </p>
           <p>
-            需要说明的是，本报不承诺可用性。公益站点由个人维护，随时可能调整或停刊，重要项目请移步官方 API。
+            需要说明的是，本报按《永续运营承诺》长期发行：永久免费、永久开启、永不关站；如遇不可抗力需搬迁，会提前 180 天登报公告。
             至于广告位，仍在招租——招的是“免费”这块招牌，租金自然也是免费的。
           </p>
         </div>
@@ -228,10 +229,12 @@ const letters = [
       </div>
 
       <!-- ============ 页脚 ============ -->
+      <RelayTrust accent="#b3261e" accent2="#4a453c" bg="#fbf8f1" fg="#1a1a1a" muted="#6b6459" grid="rgba(26,26,26,.16)" border="rgba(26,26,26,.32)" radius="0px" font="Georgia, 'Songti SC', 'SimSun', serif" />
+
       <footer class="footer" data-skin-footer>
         <p>AI 快报 · 中转版 RelayDaily ｜ 公益发行，本报为免费 API 中转，接入信息以本版刊出为准</p>
         <p class="fine">
-          免责声明：本报由第三方模型生成内容，可能出现错误，请自行核实；不承诺可用性、不提供数据留存保障，随时可能调整或停刊 · 仅供学习研究与娱乐使用
+          免责声明：本报由第三方模型生成内容，可能出现错误，请自行核实；长期运营、不提供数据留存保障 · 仅供学习研究与娱乐使用
         </p>
       </footer>
     </div>

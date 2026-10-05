@@ -7,6 +7,7 @@
  */
 import { computed, ref } from 'vue';
 import { useRelay } from '../relay';
+import RelayTrust from '../components/RelayTrust.vue';
 import { buildSamples } from '../samples';
 import CodeBlock from '../components/CodeBlock.vue';
 
@@ -55,7 +56,7 @@ const faqs = [
   },
   {
     q: '小樱会不会哪天不见了？',
-    a: '有可能的 🥺 这是个人维护的小站，不承诺可用性，重要项目请用官方 API。',
+    a: '不会的～小樱已经贴出《永续运营承诺》啦：永久免费、永久开启、永不关站 ✧ 就算要搬家也会提前 180 天公告～',
   },
   {
     q: '我的客户端要改哪里？',
@@ -243,7 +244,7 @@ const curModel = computed(() => r.model.value || 'deepseek-flash');
             </div>
           </div>
         </div>
-        <p class="note">小樱这边是拿闲置资源拼起来的公益转发，成本不转嫁给调用方，所以不收费、也不承诺 SLA 哦。</p>
+        <p class="note">小樱这边是拿闲置资源拼起来的公益转发，成本不转嫁给调用方，所以不收费，也按《永续运营承诺》一直开着哦。</p>
       </section>
 
       <section class="card faq-card">
@@ -257,9 +258,11 @@ const curModel = computed(() => r.model.value || 'deepseek-flash');
       </section>
     </main>
 
+    <RelayTrust width="840px" accent="#ff6fa5" accent2="#c4b5fd" bg="rgba(255,255,255,.92)" fg="#5b3f56" muted="#a98fa8" grid="rgba(255,111,165,.18)" border="rgba(255,111,165,.24)" radius="24px" font="'Kaiti SC', 'STKaiti', Quicksand, sans-serif" />
+
     <footer class="footer" data-skin-footer>
       <p>樱 API · SakuraRelay · 免费公益中转 · 模型能力来自第三方，小樱说的话不一定对，要紧的事记得自己核对哦 🌸</p>
-      <p class="fine">不承诺可用性，可能随时调整或关停 · 仅供学习研究与娱乐使用 · 请勿用于生产环境</p>
+      <p class="fine">长期运营 · 永久免费 · 如遇不可抗力将提前 180 天公告 · 仅供学习研究与娱乐使用</p>
     </footer>
   </div>
 </template>

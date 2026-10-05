@@ -6,6 +6,7 @@
  */
 import { computed, ref } from 'vue';
 import { useRelay } from '../relay';
+import RelayTrust from '../components/RelayTrust.vue';
 import { buildSamples } from '../samples';
 import CodeBlock from '../components/CodeBlock.vue';
 
@@ -224,11 +225,13 @@ const clients = ['OpenAI SDK', 'Cherry Studio', 'NextChat', 'LangChain', 'OpenCo
       </section>
     </main>
 
+    <RelayTrust width="1000px" accent="#ffc53d" accent2="#8a2a20" bg="rgba(34,10,12,.72)" fg="#ffe9d6" muted="#c08a7a" grid="rgba(255,157,46,.16)" border="rgba(255,157,46,.32)" radius="14px" />
+
     <footer class="footer" data-skin-footer>
       <p>福利中转站 · FREESLOT · 公益转发 · 由第三方模型提供能力，AI 可能出错，请自行核实</p>
       <p class="fine">
         本站全部"活动"均为玩梗，不涉及任何真实交易、收款、社群或下载，页面也没有任何外部链接；
-        不承诺可用性，可能随时调整或关停 · 仅供学习研究与娱乐使用
+        长期运营 · 永久免费 · 如遇不可抗力将提前 180 天公告 · 仅供学习研究与娱乐使用
       </p>
     </footer>
   </div>

@@ -9,6 +9,7 @@
  */
 import { computed } from 'vue';
 import { useRelay } from '../relay';
+import RelayTrust from '../components/RelayTrust.vue';
 import { buildSamples } from '../samples';
 import CodeBlock from '../components/CodeBlock.vue';
 
@@ -31,7 +32,7 @@ const faqs = [
   },
   {
     q: '免费额度会一直有效吗？',
-    a: '终身免费额度，无需预约；但本站为个人公益维护，不承诺可用性，重要业务请回归官方 API。',
+    a: '终身免费额度，无需预约。本站已发布《永续运营承诺》：永久免费、永久开启、永不关站。',
   },
   {
     q: '我的客户端需要改什么？',
@@ -199,12 +200,14 @@ const faqs = [
         </section>
       </main>
 
+      <RelayTrust accent="#d4af37" accent2="#5a4a2a" bg="#0b0a0d" fg="#f3d99b" muted="#8a7a52" grid="rgba(212,175,55,.18)" border="rgba(212,175,55,.32)" radius="0px" font="Didot, 'Playfair Display', Georgia, serif" />
+
       <footer class="footer" data-skin-footer>
         <div class="footer-mark">◆ ◆ ◆</div>
         <p class="footer-line">AURUM · 金枢 · 免费私人专线中转</p>
         <p class="footer-fine">
           本站为第三方公益转发，与任何模型厂商无隶属或代理关系；AI 输出可能出错，请自行核实，
-          重要用途请改用官方 API。不承诺可用性，服务可能随时调整或停止。
+          按《永续运营承诺》长期运营：永久免费、永久开启、永不关站。
         </p>
       </footer>
     </div>

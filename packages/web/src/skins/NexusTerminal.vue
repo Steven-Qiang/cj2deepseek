@@ -4,6 +4,7 @@
  */
 import { computed, ref } from 'vue';
 import { useRelay } from '../relay';
+import RelayTrust from '../components/RelayTrust.vue';
 import { buildSamples } from '../samples';
 import CodeBlock from '../components/CodeBlock.vue';
 import ToolCard from '../components/ToolCard.vue';
@@ -225,9 +226,11 @@ const nodes = [
           </div>
         </section>
 
+        <RelayTrust accent="#34d399" accent2="#2f4453" bg="#04080b" fg="#a7c0d0" muted="#4f6472" grid="#16232b" border="#16232b" radius="6px" font="'JetBrains Mono', ui-monospace, monospace" />
+
         <footer class="footer" data-skin-footer>
           <span class="user">nexus@edge</span><span class="path">:~/gateway</span><span class="sig">$</span>
-          <span class="dim">exit 0 — session closed · nexus-relay 仅供学习研究与娱乐使用，第三方转发，不承诺可用性</span>
+          <span class="dim">exit 0 — session closed · nexus-relay 仅供学习研究与娱乐使用 · 第三方转发 · 按《永续运营承诺》长期在线，永不关站</span>
           <span class="cursor">▌</span>
         </footer>
       </div>

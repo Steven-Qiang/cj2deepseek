@@ -5,6 +5,7 @@
  */
 import { computed, ref } from 'vue';
 import { useRelay } from '../relay';
+import RelayTrust from '../components/RelayTrust.vue';
 import { buildSamples } from '../samples';
 import CodeBlock from '../components/CodeBlock.vue';
 
@@ -33,7 +34,7 @@ const clients = ['OpenAI SDK', 'LangChain', 'LlamaIndex', 'Cherry Studio', 'Next
 const faqs = [
   { q: '真的完全免费吗？', a: '免费且不限额度。本站是公益转发，不对调用方计费，也不限制并发。' },
   { q: '需要注册或者申请 Key 吗？', a: '都不需要。上面那串 API Key 是页面本地生成的，填任意字符串也能通过。' },
-  { q: '会不会突然关站？', a: '公益站点由个人维护，不承诺可用性，重要项目请使用官方 API。' },
+  { q: '会不会突然关站？', a: '不会。本站已发布《永续运营承诺》：永久免费、永久开启、永不关站；如遇不可抗力需迁移，会提前 180 天公告。' },
   { q: '我的客户端要改哪里？', a: '只改 Base URL，其余不动；模型名照官方填即可，未识别的模型名会被原样接受。' },
 ];
 
@@ -108,7 +109,7 @@ const devOpen = ref(false);
             </tr>
           </tbody>
         </table>
-        <p class="note">本站由闲置资源与公益渠道拼起来，成本不转嫁给调用方，所以不收费也不承诺 SLA。</p>
+        <p class="note">本站由闲置资源与公益渠道拼起来，成本不转嫁给调用方，所以不收费，并按《永续运营承诺》长期运营。</p>
       </section>
 
       <section class="card">
@@ -170,9 +171,11 @@ const devOpen = ref(false);
       </section>
     </main>
 
+    <RelayTrust width="780px" accent="#10b981" accent2="#cbd5e1" bg="#ffffff" fg="#0f172a" muted="#7c8798" grid="#eceff5" border="#e9ecf3" radius="16px" />
+
     <footer class="footer" data-skin-footer>
       <p>FreeRelay · 免费公益中转 · 由第三方模型提供能力，AI 可能出错，请自行核实</p>
-      <p class="fine">不承诺可用性，可能随时调整或关停 · 仅供学习研究与娱乐使用</p>
+      <p class="fine">长期运营 · 永久免费 · 如遇不可抗力将提前 180 天公告 · 仅供学习研究与娱乐使用</p>
     </footer>
   </div>
 </template>

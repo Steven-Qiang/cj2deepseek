@@ -8,6 +8,7 @@
  */
 import { computed } from 'vue';
 import { useRelay } from '../relay';
+import RelayTrust from '../components/RelayTrust.vue';
 import { buildSamples } from '../samples';
 import CodeBlock from '../components/CodeBlock.vue';
 
@@ -34,7 +35,7 @@ const faqs = [
   },
   {
     q: '会不会突然不可用？',
-    a: '可能。公益站点由个人维护，不承诺 SLA；重要项目请回官方 API，这里更适合试验和玩具项目。',
+    a: '不会。本站已发布《永续运营承诺》：永久免费、永久开启、永不关站；如遇不可抗力需迁移会提前 180 天公告。',
   },
 ];
 </script>
@@ -186,10 +187,12 @@ const faqs = [
       </section>
     </main>
 
+    <RelayTrust width="1000px" accent="#22d3ee" accent2="#8b5cf6" bg="rgba(255,255,255,.05)" fg="#e2e8f0" muted="#94a3b8" grid="rgba(255,255,255,.1)" border="rgba(255,255,255,.08)" radius="24px" />
+
     <footer class="footer" data-skin-footer>
       <p class="f-brand">Aurora · 极光中转 · 免费公益转发</p>
       <p class="fine">
-        非官方服务，由第三方模型提供能力，AI 可能出错，请自行核实 · 不承诺可用性，可能随时调整或关停 ·
+        非官方服务，由第三方模型提供能力，AI 可能出错，请自行核实 · 长期运营 · 永久免费 · 如遇不可抗力将提前 180 天公告 ·
         请勿提交隐私或敏感数据 · 仅供学习研究与娱乐使用
       </p>
     </footer>

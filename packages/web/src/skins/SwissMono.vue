@@ -7,6 +7,7 @@
  */
 import { computed, ref } from 'vue';
 import { useRelay } from '../relay';
+import RelayTrust from '../components/RelayTrust.vue';
 import { buildSamples } from '../samples';
 import CodeBlock from '../components/CodeBlock.vue';
 import ToolCard from '../components/ToolCard.vue';
@@ -64,7 +65,7 @@ const faqs = [
   },
   {
     q: '可用性如何。',
-    a: '不承诺 SLA。站点由个人维护，可能随时调整规则或关停；关键业务请使用官方 API。',
+    a: '不会。本站已发布《永续运营承诺》：永久免费、永久开启、永不关站；如遇不可抗力需迁移，会提前 180 天公告。关键业务仍建议保留官方 API 作备份。',
   },
 ];
 </script>
@@ -377,12 +378,14 @@ const faqs = [
       </div>
     </section>
 
+    <RelayTrust width="1100px" accent="#e11d48" accent2="#9ca3af" bg="#ffffff" fg="#0a0a0a" muted="#6b7280" grid="rgba(10,10,10,.14)" border="#0a0a0a" radius="0px" />
+
     <footer class="footer" data-skin-footer>
       <div class="wrap footer-in">
         <div class="footer-brand">RELAY.</div>
         <p class="footer-line">
           第三方 AI 转发中转站。内容由上游模型生成，可能存在错误，请自行核实。
-          本站与任何模型厂商无隶属关系，不承诺服务等级，可能随时调整或关停。
+          本站与任何模型厂商无隶属关系；按《永续运营承诺》长期运营 —— 永久免费、永久开启、永不关站。
         </p>
         <p class="footer-line footer-fine">
           Free. No signup. No quota. 仅供学习研究与技术演示使用，请勿用于生产或商业场景。

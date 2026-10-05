@@ -5,6 +5,7 @@
  */
 import { computed, ref } from 'vue';
 import { useRelay } from '../relay';
+import RelayTrust from '../components/RelayTrust.vue';
 import { buildSamples } from '../samples';
 import CodeBlock from '../components/CodeBlock.vue';
 import ToolCard from '../components/ToolCard.vue';
@@ -43,7 +44,7 @@ const faqs = [
   },
   {
     q: '会不会突然关站？',
-    a: '会。个人维护的公益节点，随时可能下线，不做任何可用性承诺。真要上生产，请接官方 API。',
+    a: '不会。本站已签署《永续运营承诺》：永久免费、永久开启、永不关站；真到必须迁移那天，提前 180 天公告。',
   },
   {
     q: '有并发或速率限制吗？',
@@ -291,9 +292,11 @@ const faqs = [
         </div>
       </section>
 
+      <RelayTrust accent="#00fff0" accent2="#6b2a5a" bg="rgba(10,0,24,.72)" fg="#e6d9ff" muted="#8a7fa8" grid="rgba(0,255,240,.14)" border="rgba(255,45,149,.28)" radius="4px" />
+
       <footer class="footer" data-skin-footer>
         <p>NIGHTFERRY · 夜航中转 —— 第三方转发，非官方服务，AI 输出可能出错，请自行核实</p>
-        <p class="fine">不提供 SLA，节点可能随时调整或关停 · 仅供学习研究与娱乐使用 · 请勿用于商业或违法用途</p>
+        <p class="fine">长期运营 · 永久免费 · 如遇不可抗力将提前 180 天公告 · 仅供学习研究与娱乐使用 · 请勿用于商业或违法用途</p>
       </footer>
     </main>
   </div>

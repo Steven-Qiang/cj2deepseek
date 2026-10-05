@@ -5,6 +5,7 @@
  */
 import { computed, ref } from 'vue';
 import { useRelay } from '../relay';
+import RelayTrust from '../components/RelayTrust.vue';
 import { buildSamples } from '../samples';
 import CodeBlock from '../components/CodeBlock.vue';
 
@@ -18,7 +19,7 @@ const curlSnippet = computed(() => buildSamples(r.baseUrl.value, r.apiKey.value,
 const notes = [
   { q: '真的免费吗？', a: '真的呀～麻薯是公益中转，不收费、不扣额度，也没有次数限制 🍡' },
   { q: '要注册或者充钱吗？', a: '都不用哦，连 Key 都可以随便填一个，打开就能用～' },
-  { q: '会不会突然关门呀？', a: '有可能啦 🥺 麻薯是个人维护的小站，重要的事情别只靠麻薯。' },
+  { q: '会不会突然关门呀？', a: '不会的～麻薯贴了《永续运营承诺》：永久免费、永久开启、永不关站 🍡' },
 ];
 
 const noteOpen = ref(false);
@@ -152,9 +153,11 @@ async function run() {
       现在就是免登录模式呀～登录功能麻薯还在慢慢做 🍡（点一下关掉）
     </div>
 
+    <RelayTrust width="700px" accent="#7c5cfc" accent2="#ff8fb1" bg="#fbfaff" fg="#2e2a45" muted="#8a82a8" grid="rgba(91,75,138,.14)" border="rgba(91,75,138,.12)" radius="26px" font="Quicksand, Nunito, 'PingFang SC', sans-serif" />
+
     <footer class="footer" data-skin-footer>
       <p>麻薯 AI · 免费公益中转 · 仅供娱乐，麻薯说的话不一定对，重要的事记得自己核对哦 🍡</p>
-      <p class="fine">不承诺一直可用，可能哪天就关门睡觉了</p>
+      <p class="fine">长期运营 · 永久免费 · 如遇不可抗力会提前 180 天公告</p>
     </footer>
   </div>
 </template>

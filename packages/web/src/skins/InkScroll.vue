@@ -7,6 +7,7 @@
  */
 import { computed, ref } from 'vue';
 import { useRelay } from '../relay';
+import RelayTrust from '../components/RelayTrust.vue';
 import { buildSamples } from '../samples';
 import CodeBlock from '../components/CodeBlock.vue';
 
@@ -185,10 +186,12 @@ const devOpen = ref(true);
         </section>
       </main>
 
+      <RelayTrust accent="#9e2b25" accent2="#6b6459" bg="rgba(255,253,247,.85)" fg="#1f1c17" muted="#6b6459" grid="rgba(31,28,23,.14)" border="rgba(31,28,23,.26)" radius="2px" font="'Kaiti SC', 'STKaiti', 'Songti SC', serif" />
+
       <footer class="footer" data-skin-footer>
         <div class="rule"><span class="rule-mark"></span></div>
         <p>墨枢 · 免费公益中转 · 一问一答，皆有回响</p>
-        <p class="fine">能力由第三方模型提供，AI 或有错漏，请自行核实；公益小站不承诺可用性，或调或停，恕不另行相告。仅供学习研究与娱乐之用。</p>
+        <p class="fine">能力由第三方模型提供，AI 或有错漏，请自行核实；公益小站按《永续运营承诺》长期开着：永久免费、永不关站；若不得已迁移，必先期半载相告。仅供学习研究与娱乐之用。</p>
       </footer>
     </div>
 
