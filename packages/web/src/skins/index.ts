@@ -1,26 +1,18 @@
 /**
- * 皮肤注册表。
+ * 皮肤注册表 + 选择逻辑。
  *
- * 全部是「免费中转站」人设，区别在气质、文案与功能深度：
- *   ① RelayHub        深色科技风，全功能测试台（5 Tab + 工具调用可视化 + 成本表）
- *   ② nexus-relay     终端 / 控制台风，全功能终端化呈现
- *   ③ FreeRelay       日间极简，免费对比表 + 调试台
- *   ④ 麻薯 AI          黏土圆润萌系
- *   ⑤ NIGHTFERRY      赛博霓虹，全功能
- *   ⑥ 云枢 API         亮色企业云控制台，全功能
- *   ⑦ 福利中转站       火红营销派对风
- *   ⑧ 樱 API           少女粉二次元
- *   ⑨ PIXEL RELAY     8-bit 街机像素风
- *   ⑩ AI 快报          报纸印刷风
- *   ⑪ RELAY.          瑞士国际主义极简，全功能
- *   ⑫ Aurora          玻璃拟态极光
- *   ⑬ 墨枢             国风水墨
- *   ⑭ AURUM           黑金奢华
+ * id / brand / title 的唯一来源是 skin-meta.ts（同一份数据也会被构建脚本投递给 Worker，
+ * 用于服务端注入 head 与预渲染首屏），这里只负责把 id 映射到组件。
  *
- * 访问者首次进来随机分配一套并写进 localStorage，之后一直固定；
- * 自己换肤的隐藏入口见 App.vue（?skin= 与连点页脚）。
+ * 选择优先级：
+ *   /skin/<id> 路径（可收录 URL，必须严格生效）
+ *   > ?skin=（作者换肤入口：序号 / id / random）
+ *   > localStorage（回访用户固定）
+ *   > window.__RELAY_SKIN__（服务端本次下发的皮肤，首访沿用，避免闪屏）
+ *   > 随机
  */
 import type { Component } from 'vue';
+import { SKIN_META } from './skin-meta';
 import RelayDark from './RelayDark.vue';
 import NexusTerminal from './NexusTerminal.vue';
 import FreeRelay from './FreeRelay.vue';
@@ -36,8 +28,32 @@ import AuroraGlass from './AuroraGlass.vue';
 import InkScroll from './InkScroll.vue';
 import NoirGold from './NoirGold.vue';
 
+declare global {
+  interface Window {
+    /** 服务端注入的本轮皮肤 id */
+    __RELAY_SKIN__?: string;
+  }
+}
+
+const COMPONENTS: Record<string, Component> = {
+  'relay-dark': RelayDark,
+  'nexus-terminal': NexusTerminal,
+  'free-relay': FreeRelay,
+  'mochi-cute': MochiCute,
+  'cyber-neon': CyberNeon,
+  'cloud-saas': CloudSaaS,
+  'hot-deal': HotDeal,
+  'sakura-anime': SakuraAnime,
+  'pixel-arcade': PixelArcade,
+  'paper-daily': PaperDaily,
+  'swiss-mono': SwissMono,
+  'aurora-glass': AuroraGlass,
+  'ink-scroll': InkScroll,
+  'noir-gold': NoirGold,
+};
+
 export interface Skin {
-  /** 稳定 id，存 localStorage 用 */
+  /** 稳定 id，存 localStorage / cookie 用 */
   id: string;
   /** 品牌名 */
   brand: string;
@@ -46,43 +62,40 @@ export interface Skin {
   component: Component;
 }
 
-export const SKINS: Skin[] = [
-  { id: 'relay-dark', brand: 'RelayHub', title: 'RelayHub · 免费开源的 AI 转发中转站', component: RelayDark },
-  { id: 'nexus-terminal', brand: 'nexus-relay', title: 'nexus-relay · 免费 AI Gateway Console', component: NexusTerminal },
-  { id: 'free-relay', brand: 'FreeRelay', title: 'FreeRelay · 免费 API 中转站', component: FreeRelay },
-  { id: 'mochi-cute', brand: '麻薯 AI', title: '麻薯 AI · 免费 API 中转站', component: MochiCute },
-  { id: 'cyber-neon', brand: 'NIGHTFERRY · 夜航中转', title: '夜航中转 · 免费 API 中转站', component: CyberNeon },
-  { id: 'cloud-saas', brand: '云枢 API · CloudPivot', title: '云枢 API · 免费中转控制台', component: CloudSaaS },
-  { id: 'hot-deal', brand: '福利中转站 · FREESLOT', title: '福利中转站 · 0 元 API 不限量', component: HotDeal },
-  { id: 'sakura-anime', brand: '樱 API · SakuraRelay', title: '樱 API · 免费中转站', component: SakuraAnime },
-  { id: 'pixel-arcade', brand: 'PIXEL RELAY · 像素中转站', title: '像素中转站 · FREE API', component: PixelArcade },
-  { id: 'paper-daily', brand: 'AI 快报 · 中转版', title: 'AI 快报 · 免费 API 中转', component: PaperDaily },
-  { id: 'swiss-mono', brand: 'RELAY.', title: 'RELAY. · 免费 API 中转', component: SwissMono },
-  { id: 'aurora-glass', brand: 'Aurora · 极光中转', title: 'Aurora · 免费 API 中转站', component: AuroraGlass },
-  { id: 'ink-scroll', brand: '墨枢', title: '墨枢 · 免费 API 中转', component: InkScroll },
-  { id: 'noir-gold', brand: 'AURUM · 金枢', title: 'AURUM · 免费 API 中转', component: NoirGold },
-];
+export const SKINS: Skin[] = SKIN_META.filter((m) => COMPONENTS[m.id]).map((m) => ({
+  id: m.id,
+  brand: m.brand,
+  title: m.title,
+  component: COMPONENTS[m.id],
+}));
 
 export const LS_SKIN = 'cj2deepseek:skin';
+export const SKIN_COOKIE = 'relay_skin';
 
 export function findSkin(id: string | null | undefined): Skin | undefined {
+  if (!id) return undefined;
   return SKINS.find((s) => s.id === id);
 }
 
 export function readStoredSkin(): string | null {
   try {
-    const v = localStorage.getItem(LS_SKIN);
-    return findSkin(v) ? v : null;
+    return findSkin(localStorage.getItem(LS_SKIN))?.id ?? null;
   } catch {
     return null;
   }
 }
 
+/** 同时写 localStorage 与 cookie：cookie 让服务端下次直接下发同一套皮肤 */
 export function storeSkin(id: string): void {
   try {
     localStorage.setItem(LS_SKIN, id);
   } catch {
     /* 隐私模式下可能抛错，忽略 */
+  }
+  try {
+    document.cookie = `${SKIN_COOKIE}=${encodeURIComponent(id)}; path=/; max-age=31536000; samesite=lax`;
+  } catch {
+    /* 同上 */
   }
 }
 
@@ -90,10 +103,17 @@ export function pickRandomSkinId(): string {
   return SKINS[Math.floor(Math.random() * SKINS.length)].id;
 }
 
-/**
- * 决定这次渲染哪套皮肤，并把结果固定下来。
- * 优先级：URL 的 ?skin= （1 起序号 / id / random）> localStorage > 随机。
- */
+/** /skin/<id> 路径上的皮肤（可收录 URL，优先级最高） */
+function readPathSkin(): string | null {
+  try {
+    const m = window.location.pathname.match(/^\/skin\/([^/]+)\/?$/);
+    return m ? findSkin(decodeURIComponent(m[1]))?.id ?? null : null;
+  } catch {
+    return null;
+  }
+}
+
+/** 决定这次渲染哪套皮肤，并把结果固定下来 */
 export function resolveInitialSkin(): string {
   let requested: string | null = null;
   try {
@@ -102,8 +122,9 @@ export function resolveInitialSkin(): string {
     requested = null;
   }
 
-  let id: string | null = null;
-  if (requested) {
+  let id: string | null = readPathSkin();
+
+  if (!id && requested) {
     const key = requested.trim().toLowerCase();
     if (key === 'random') {
       id = pickRandomSkinId();
@@ -115,6 +136,7 @@ export function resolveInitialSkin(): string {
   }
 
   if (!id) id = readStoredSkin();
+  if (!id) id = findSkin(window.__RELAY_SKIN__)?.id ?? null;
   if (!id) id = pickRandomSkinId();
 
   storeSkin(id);

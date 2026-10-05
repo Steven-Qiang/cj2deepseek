@@ -33,6 +33,26 @@
     {
       "source": "/",
       "destination": "/functions/index"
+    },
+    {
+      "source": "/skin",
+      "destination": "/functions/index"
+    },
+    {
+      "source": "/skin/:id",
+      "destination": "/functions/index"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/functions/index"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/functions/index"
+    },
+    {
+      "source": "/og/:id.png",
+      "destination": "/functions/index"
     }
   ]
 }

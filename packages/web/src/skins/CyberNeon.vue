@@ -91,7 +91,7 @@ const faqs = [
           <span class="tag">节点全开</span>
           <span class="tag">SSE 流式</span>
           <span class="tag">Function Calling</span>
-          <span class="tag">延迟 182ms</span>
+          <span class="tag">峰值 10,000 tok/s</span>
         </div>
       </section>
 

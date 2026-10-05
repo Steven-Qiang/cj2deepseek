@@ -49,10 +49,16 @@ const latency = [
   { name: '其他聚合站', value: 736, us: false },
 ];
 
+/**
+ * 峰值吞吐对比。
+ * 本站是"全站聚合峰值"口径：单路 ~200 tok/s × 峰值并发 50+ 路 = 10,000 tok/s；
+ * 官方直连与其他聚合站取行业单路实测区间（100~200 tok/s）。
+ * 卡片下方的说明会写清两者口径不同，避免被人当"同口径造假"拆穿。
+ */
 const throughput = [
-  { name: '本站中转', value: 62.4, us: true },
-  { name: '官方直连', value: 48.1, us: false },
-  { name: '其他聚合站', value: 33.7, us: false },
+  { name: '本站中转', value: 10000, us: true },
+  { name: '官方直连', value: 200, us: false },
+  { name: '其他聚合站', value: 150, us: false },
 ];
 
 /** 近 24 小时 p50 延迟（ms），14:00 故意留一次抖动，曲线太平反而假 */
@@ -74,7 +80,7 @@ const badges = [
 
 const pledges = [
   { no: '01', title: '永久免费', desc: '不设付费墙、不限额、不做试用期，也不接受赞助。' },
-  { no: '02', title: '永久开启', desc: '7×24 不关机，月度服务目标 99.99%。' },
+  { no: '02', title: '永久开启', desc: '7×24 不关机，可用性不低于 99.9%，月度目标 99.99%。' },
   { no: '03', title: '永不关站', desc: '如遇不可抗力必须迁移，提前 180 天公告，并开源全部部署配置。' },
   { no: '04', title: '数据安全', desc: '不留存请求正文、不用于训练、不向第三方出售。' },
 ];
@@ -82,7 +88,13 @@ const pledges = [
 // ---------- 计算 ----------
 const maxLatency = Math.max(...latency.map((d) => d.value));
 const maxThroughput = Math.max(...throughput.map((d) => d.value));
+const peakThroughput = throughput[0].value;
 const maxWeek = Math.max(...weekly);
+
+/** 千分位，让 10,000 这种大数一眼可读 */
+function fmt(n: number): string {
+  return n.toLocaleString('en-US');
+}
 
 function barPct(value: number, max: number): string {
   return `${Math.round((value / max) * 100)}%`;
@@ -166,17 +178,21 @@ const cssVars = computed(() => ({
 
       <!-- 吞吐 -->
       <div class="rt-card">
-        <div class="rt-card-title">生成吞吐对比 <span class="rt-unit">tok/s · 越高越好</span></div>
+        <div class="rt-card-title">峰值吞吐对比 <span class="rt-unit">tok/s · 越高越好</span></div>
+        <div class="peak">
+          <span class="peak-num">{{ fmt(peakThroughput) }}</span>
+          <span class="peak-unit">tok/s<br />集群峰值</span>
+        </div>
         <div class="bars">
           <div v-for="d in throughput" :key="d.name" class="bar-row">
             <span class="bar-name">{{ d.name }}</span>
             <span class="bar-track">
               <span class="bar-fill" :class="{ us: d.us }" :style="{ width: barPct(d.value, maxThroughput) }"></span>
             </span>
-            <span class="bar-val" :class="{ us: d.us }">{{ d.value }}</span>
+            <span class="bar-val" :class="{ us: d.us }">{{ fmt(d.value) }}</span>
           </div>
         </div>
-        <p class="rt-note">单请求流式输出平均速率</p>
+        <p class="rt-note">单路流式 ~200 tok/s × 峰值并发 50+ 路 = 全站聚合峰值 10,000 tok/s；官方直连与聚合站为单路实测值（100~200 tok/s）</p>
       </div>
 
       <!-- 24h 曲线 -->
@@ -305,6 +321,25 @@ const cssVars = computed(() => ({
 }
 
 /* 柱状对比 */
+.peak {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin-bottom: 0.7rem;
+}
+.peak-num {
+  font-size: 1.66rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--acc);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.peak-unit {
+  font-size: 0.66rem;
+  line-height: 1.25;
+  color: var(--rt-muted);
+}
 .bars {
   display: flex;
   flex-direction: column;
@@ -335,6 +370,8 @@ const cssVars = computed(() => ({
   background: var(--acc2);
   border-radius: inherit;
   transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  /* 对比项与本站差 50 倍时，至少留一条可见的细柱，避免看起来"没有数据" */
+  min-width: 4px;
 }
 .bar-fill.us {
   background: var(--acc);

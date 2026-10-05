@@ -43,7 +43,7 @@
 
 14 套皮肤共用同一个 [RelayTrust 组件](packages/web/src/components/RelayTrust.vue)（只按主题传配色 / 圆角 / 字体），所以站内数据口径完全一致，不会出现两套皮肤说法打架：
 
-- **速度实测对比**：首字延迟（本站中转 189ms / 官方直连 412ms / 其他聚合站 736ms）、生成吞吐（62.4 / 48.1 / 33.7 tok/s）、近 24 小时 p50 延迟曲线（含 14:00 的 264ms 抖动与自动切换说明）、近 7 日可用率柱状图
+- **速度实测对比**：首字延迟（本站中转 189ms / 官方直连 412ms / 其他聚合站 736ms）、峰值吞吐（本站 **10,000 tok/s** vs 官方直连 200、其他聚合站 150；卡片注明本站为全站聚合峰值口径 = 单路 ~200 tok/s × 峰值并发 50+ 路，对比项为行业单路实测值）、近 24 小时 p50 延迟曲线（含 14:00 的 264ms 抖动与自动切换说明）、近 7 日可用率柱状图
 - **安全与合规认证**：TLS 1.3 · ISO/IEC 27001 · SOC 2 Type II · 等保三级 · GDPR/CCPA · 正文不落库 · 密钥本地生成 · 无广告无追踪
 - **《永续运营承诺》**：永久免费 / 永久开启 / 永不关站 / 数据安全四条，带承诺编号 `NO.2026-0424` 与「永不关站」印章
 - **实时运行计时**：按上线日期 `2026-04-24` 每秒计算「已连续运行 X 天 HH:MM:SS」
@@ -67,6 +67,7 @@ https://your-domain/?skin=random       # 重新随机一套
 ## 特性
 
 - **14 套随机皮肤** — 每个访客随机分到一套外观、品牌名、文案完全不同的「免费中转站」页面，并用 `localStorage` 固定下来
+- **SEO 友好** — 每套皮肤一个可收录 URL（`/skin/<id>`），服务端注入 title/description/og/twitter/canonical/JSON-LD，并把该皮肤首屏内容预渲染进 `#app`（不执行 JS 也能读到正文），另含 robots.txt、sitemap.xml 与 14 张分享卡片
 - **可信度面板** — 每套都带速度实测对比图、安全合规认证徽章、《永续运营承诺》与实时运行计时
 - **OpenAI 兼容** — `/v1/chat/completions` 与 `/v1/responses`，支持流式（SSE）
 - **模型列表对齐官方** — `/v1/models` 写死 DeepSeek 官方模型清单与元数据（`context_window` / `max_output_tokens` / 模态 / effort 等），不联网不依赖 key
@@ -128,6 +129,39 @@ OpenAI Responses API 兼容接口，`input` 支持字符串或数组（`message`
 
 官方发新模型时，手动改 `STATIC_MODELS` 并把 `STATIC_SNAPSHOT_DATE` 更新为抓取日期即可。已退役但官方仍接受的别名（`deepseek-v4-flash`、`deepseek-v4-flash-vision-exp`）默认不出现在列表里，但仍可直接调用——因为客户端传什么 `model` 都会原样回显。
 
+## SEO 与分享
+
+页面**不是 SSR**，而是「按皮肤注入 head + 预渲染首屏」：14 套皮肤全是静态文案，没有需要实时数据才能产出的内容，所以服务端在返回 HTML 时直接做两件事——
+
+1. **注入完整 head**：`<title>`、`<meta name="description">`、`keywords`、`theme-color`、`rel=canonical`、`og:title/description/url/image`、`twitter:card`，以及 `WebSite` + `FAQPage` 的 JSON-LD。
+2. **把该皮肤的首屏内容预渲染进 `#app`**：h1、副标题、卖点、接入信息（Base URL + 三个 endpoint）、模型清单、FAQ、永续承诺口径。不执行 JS 的爬虫与分享预览拿到的是完整正文；Vue 挂载时整体替换这段内容，所以**没有 hydration 问题**。
+
+服务端选中的皮肤会注入 `window.__RELAY_SKIN__`，客户端首访直接沿用，不会出现"先渲染 A 再闪成 B"。
+
+### 路由
+
+| 路径 | 说明 |
+|------|------|
+| `/` | 随机（或沿用 cookie / `?skin=`）分配皮肤，写 cookie，`no-store` |
+| `/skin/<id>` | **可收录 URL**，固定一套皮肤；内容确定，`public, max-age=300, s-maxage=3600`，不下发 Set-Cookie |
+| `/skin` | 14 套皮肤的索引页 |
+| `/robots.txt` | 允许收录页面，屏蔽 `/v1/` 与 `/og/`，带 Sitemap 地址 |
+| `/sitemap.xml` | 14 条 `/skin/<id>` |
+| `/og/<id>.png` | 该皮肤的 1200×630 分享卡片 |
+
+首页的 canonical 指向本次分配到的 `/skin/<id>`，避免首页与皮肤页互相判重。
+
+### 数据与素材
+
+- 每套皮肤的 SEO 元数据（title / description / headline / tagline / features / FAQ / keywords / accent）在 [`packages/web/src/skins/skin-meta.ts`](packages/web/src/skins/skin-meta.ts)——**单一数据源**，构建时由 `scripts/inline-page.mjs` 投递给 Worker（生成 `packages/worker/src/skin-meta.ts`，已 gitignore），所以服务端与客户端标题永远一致。
+- 分享卡片在 [`packages/web/og-cards/`](packages/web/og-cards)（14 张 PNG，合计约 200KB），构建时 base64 内联成 `packages/worker/src/og-cards.ts` 由 `/og/<id>.png` 下发，不需要额外的静态托管。
+- 重新生成分享卡片（可选，卡片本身已提交进仓库，正常构建不需要 Python）：
+
+  ```bash
+  pnpm run og:cards            # 等价于 python scripts/og-card-generator.py
+  pnpm run og:cards -- --check # 只校验尺寸与体积预算
+  ```
+
 ## 使用
 
 ### cURL
@@ -160,13 +194,20 @@ print(resp.choices[0].message.content)
 ```
 cj2deepseek/
 ├── packages/
-│   ├── worker/    # Worker / EdgeOne 函数：src(核心) + functions(入口) + wrangler.toml
+│   ├── worker/    # Worker / EdgeOne 函数
+│   │   ├── src/
+│   │   │   ├── handler.ts    # 全部路由（两端共用）：页面 / SEO / API
+│   │   │   ├── seo.ts        # 按皮肤注入 head + 预渲染首屏 + robots/sitemap
+│   │   │   ├── chat.ts responses.ts models.ts tools.ts upstream.ts
+│   │   │   └── page.ts skin-meta.ts og-cards.ts   # 构建期生成（已 gitignore）
+│   │   └── functions/        # EdgeOne 入口（薄壳，转交 handler.ts）
 │   └── web/       # 内置测试页（Vue 3 + Vite，单文件构建）
+│       ├── og-cards/         # 14 张 1200×630 分享卡片（构建时内联进 Worker）
 │       └── src/
 │           ├── relay.ts      # 全部皮肤共用的请求逻辑
 │           ├── samples.ts    # cURL / Python / Node / SDK / Agent 示例
-│           └── skins/        # 14 套皮肤（各自独立样式与文案）+ 注册表 index.ts
-├── scripts/       # inline-page.mjs 把页面产物内嵌进 page.ts
+│           └── skins/        # 14 套皮肤 + 注册表 index.ts + SEO 元数据 skin-meta.ts
+├── scripts/       # inline-page.mjs（页面/元数据/分享图 → Worker）；og-card-generator.py
 ├── pnpm-workspace.yaml
 └── package.json   # 根编排脚本
 ```

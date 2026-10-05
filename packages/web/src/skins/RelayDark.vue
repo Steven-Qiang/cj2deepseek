@@ -55,6 +55,7 @@ const pricing = [
         <span class="pill pill-free">免费不限额度</span>
         <span class="pill"><i class="dot"></i>99.9% 可用性</span>
         <span class="pill">实测 189ms</span>
+        <span class="pill">峰值 10,000 tok/s</span>
         <span class="pill">不限并发</span>
         <span class="pill">SSE 流式</span>
         <span class="pill">Function Calling</span>

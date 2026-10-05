@@ -29,6 +29,7 @@
   ],
   "scripts": {
     "build:page": "pnpm -F cj2deepseek-web build && node scripts/inline-page.mjs",
+    "og:cards": "python scripts/og-card-generator.py",
     "dev:page": "pnpm -F cj2deepseek-web dev",
     "dev": "pnpm run build:page && pnpm -F cj2deepseek-worker dev",
     "deploy": "pnpm run build:page && pnpm -F cj2deepseek-worker deploy",

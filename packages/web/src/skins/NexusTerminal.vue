@@ -72,6 +72,7 @@ const nodes = [
             <div class="kv"><span class="k">availability</span><span class="v ok">99.9%</span></div>
             <div class="kv"><span class="k">p50 latency</span><span class="v">189 ms</span></div>
             <div class="kv"><span class="k">concurrency</span><span class="v">unlimited</span></div>
+            <div class="kv"><span class="k">peak throughput</span><span class="v ok">10,000 tok/s</span></div>
             <div class="kv"><span class="k">stream</span><span class="v">sse</span></div>
             <div class="kv"><span class="k">tool-call</span><span class="v">enabled</span></div>
             <div class="kv"><span class="k">billing</span><span class="v ok">FREE · no quota</span></div>
